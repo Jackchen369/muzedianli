@@ -14,13 +14,13 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         if self.ENV == "production":
-            return "postgresql+asyncpg://engadmin:EngMgmt@2026@127.0.0.1:5432/eng_mgmt"
+            return "postgresql+asyncpg://engadmin:EngMgmt%402026@127.0.0.1:5432/eng_mgmt"
         return "sqlite+aiosqlite:///./eng_mgmt.db"
 
     @property
     def DATABASE_URL_SYNC(self) -> str:
         if self.ENV == "production":
-            return "postgresql://engadmin:EngMgmt@2026@127.0.0.1:5432/eng_mgmt"
+            return "postgresql://engadmin:EngMgmt%402026@127.0.0.1:5432/eng_mgmt"
         return "sqlite:///./eng_mgmt.db"
 
     SECRET_KEY: str = "eng-mgmt-secret-key-change-in-production-2026"
