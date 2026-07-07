@@ -29,16 +29,21 @@ async def lifespan(app: FastAPI):
             r = await db.execute(select(Tenant).where(Tenant.code == code))
             if not r.scalar_one_or_none():
                 db.add(Tenant(name=name, code=code))
+        await db.flush()  # 确保租户 ID 生成
 
         # Create super admin
         r = await db.execute(select(User).where(User.username == settings.SUPER_ADMIN_USERNAME))
         if not r.scalar_one_or_none():
+            # 获取默认租户 ID
+            tenant_r = await db.execute(select(Tenant).where(Tenant.code == "乙"))
+            tenant = tenant_r.scalar_one_or_none()
+            tenant_id = tenant.id if tenant else 1
             db.add(User(
                 username=settings.SUPER_ADMIN_USERNAME,
                 password_hash=get_password_hash(settings.SUPER_ADMIN_PASSWORD),
                 display_name="超级管理员",
                 role="super_admin",
-                tenant_id=1,
+                tenant_id=tenant_id,
             ))
         await db.commit()
     yield
