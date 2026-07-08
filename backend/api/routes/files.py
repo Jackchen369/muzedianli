@@ -41,6 +41,10 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(content)
 
+    # Seals: 只存文件，不写 DB（由调用方管理）
+    if filetype == "seal":
+        return {"filename": file.filename, "filepath": unique_name, "filesize": len(content)}
+
     # DB record
     cf = ContractFile(
         tenant_id=admin.tenant_id or 1,
