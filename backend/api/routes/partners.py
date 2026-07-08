@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_admin, get_current_user, require_basic, require_admin
+from core.security import get_current_admin, get_current_user, require_admin, require_partner
 from models import Partner, AuditLog, User
 from schemas import PartnerCreate, PartnerResponse
 
@@ -27,7 +27,7 @@ async def create_partner(
 @router.get("", response_model=list[PartnerResponse])
 async def list_partners(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_partner),
 ):
     result = await db.execute(select(Partner).where(Partner.is_active == True).order_by(Partner.id))
     return result.scalars().all()
@@ -37,7 +37,7 @@ async def list_partners(
 async def get_partner(
     partner_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_admin),
+    user: User = Depends(require_partner),
 ):
     result = await db.execute(select(Partner).where(Partner.id == partner_id))
     partner = result.scalar_one_or_none()

@@ -92,6 +92,7 @@ def require_role(*roles: str):
 
 # 预定义常用权限组合
 require_admin = require_role('super_admin', 'company_admin')
+require_partner = require_role('super_admin', 'company_admin', 'project_manager')
 require_finance = require_role('super_admin', 'company_admin', 'finance')
 require_project = require_role('super_admin', 'company_admin', 'project_manager')
 require_basic = require_role('super_admin', 'company_admin', 'project_manager', 'finance', 'worker', 'attendance')
