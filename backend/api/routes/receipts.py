@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 from core.database import get_db
-from core.security import get_current_admin, get_current_user, require_finance, require_admin
+from core.security import get_current_admin, get_current_user, require_finance, require_admin, require_basic
 from models import ElectronicReceipt, CompanySeal, User, AuditLog
 
 
@@ -184,7 +184,7 @@ async def create_seal(
 @router.get("/seals", response_model=list[CompanySealResponse])
 async def list_seals(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_finance),
+    user: User = Depends(require_basic),
 ):
     """获取所有财务章."""
     result = await db.execute(
