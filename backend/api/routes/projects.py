@@ -15,14 +15,15 @@ router = APIRouter(prefix="/projects", tags=["项目管理"])
 async def create_project(
     req: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_project),
 ):
+    """创建项目 — 管理员和项目负责人可操作"""
     project = Project(**req.model_dump())
-    tid = admin.tenant_id or 1
+    tid = user.tenant_id or 1
     project.tenant_id = tid
     db.add(project)
     await db.flush()
-    db.add(AuditLog(tenant_id=tid, user_id=admin.id, username=admin.username,
+    db.add(AuditLog(tenant_id=tid, user_id=user.id, username=user.username,
                     action="create_project", biz_type="project", biz_id=project.id))
     # Reload with owner name
     result = await db.execute(
