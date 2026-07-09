@@ -175,7 +175,7 @@ async def create_seal(
     db.add(seal)
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id, user_id=admin.id, username=admin.username,
+        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
         action="create_seal", biz_type="company_seal", biz_id=seal.id,
     ))
     return seal
@@ -207,7 +207,7 @@ async def delete_seal(
     await db.delete(seal)
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id, user_id=admin.id, username=admin.username,
+        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
         action="delete_seal", biz_type="company_seal", biz_id=seal_id,
     ))
     return {"detail": "删除成功"}
@@ -258,12 +258,12 @@ async def create_receipt(
         handler=req.handler,
         approver=req.approver,
         remark=req.remark,
-        tenant_id=admin.tenant_id,
+        tenant_id=admin.tenant_id or 1,
     )
     db.add(receipt)
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id, user_id=admin.id, username=admin.username,
+        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
         action="create_receipt", biz_type="electronic_receipt", biz_id=receipt.id,
     ))
     return receipt
@@ -339,7 +339,7 @@ async def delete_receipt(
     receipt.status = "已作废"
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id, user_id=admin.id, username=admin.username,
+        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
         action="void_receipt", biz_type="electronic_receipt", biz_id=receipt_id,
     ))
     return {"detail": "已作废"}
