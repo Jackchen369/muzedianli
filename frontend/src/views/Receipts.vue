@@ -226,8 +226,8 @@ const filteredList = computed(() => {
 })
 
 async function fetch() {
-  list.value = await request.get('/ereceipts/receipts')
-  seals.value = await request.get('/ereceipts/seals')
+  list.value = await request.get('/ereceipts/receipts').catch(() => [])
+  seals.value = await request.get('/ereceipts/seals').catch(() => [])
 }
 
 function openNew() { Object.assign(form, { payer_name:'', amount:0, reason:'', payment_method:'现金', handler:'', approver:'', remark:'', receipt_date:'', seal_id:null }); showNew.value = true }

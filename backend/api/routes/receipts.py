@@ -272,7 +272,7 @@ async def create_receipt(
 @router.get("/receipts", response_model=list[ElectronicReceiptResponse])
 async def list_receipts(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_finance),
+    user: User = Depends(require_basic),
 ):
     """获取所有电子收据."""
     result = await db.execute(
@@ -285,7 +285,7 @@ async def list_receipts(
 async def get_receipt(
     receipt_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_finance),
+    user: User = Depends(require_basic),
 ):
     """获取单个电子收据."""
     result = await db.execute(
