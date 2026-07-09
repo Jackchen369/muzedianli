@@ -1,7 +1,7 @@
 """Contract file upload/download routes."""
 import os, uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,12 +21,16 @@ async def upload_file(
     project_id: int,
     file: UploadFile = File(...),
     filetype: str = Form("contract"),
+    ft: Optional[str] = Query(None, alias="filetype"),
     partner_id: Optional[int] = Form(None),
     remark: str = Form(""),
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
     """上传合同/发票/回单等电子文件"""
+    # 优先使用查询参数中的 filetype（el-upload 不发送 Form 字段）
+    if ft:
+        filetype = ft
     # Validate file
     if not file.filename:
         raise HTTPException(status_code=400, detail="文件名为空")
