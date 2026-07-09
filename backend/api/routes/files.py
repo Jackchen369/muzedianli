@@ -25,9 +25,11 @@ async def upload_file(
     partner_id: Optional[int] = Form(None),
     remark: str = Form(""),
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
     """上传合同/发票/回单等电子文件"""
+    if user.role not in ("super_admin", "company_admin", "project_manager"):
+        raise HTTPException(status_code=403, detail="权限不足")
     # 优先使用查询参数中的 filetype（el-upload 不发送 Form 字段）
     if ft:
         filetype = ft
@@ -51,7 +53,7 @@ async def upload_file(
 
     # DB record
     cf = ContractFile(
-        tenant_id=admin.tenant_id or 1,
+        tenant_id=user.tenant_id or 1,
         project_id=project_id,
         partner_id=partner_id,
         filename=file.filename,
@@ -65,7 +67,7 @@ async def upload_file(
     await db.refresh(cf)
 
     db.add(AuditLog(
-        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+        tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
         action="upload_file", biz_type="contract_file", biz_id=cf.id,
     ))
     return cf
