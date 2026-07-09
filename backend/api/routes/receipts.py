@@ -304,9 +304,11 @@ async def update_receipt(
     receipt_id: int,
     req: ElectronicReceiptUpdate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
     """更新电子收据."""
+    if user.role not in ("super_admin", "company_admin", "project_manager", "finance"):
+        raise HTTPException(status_code=403, detail="权限不足")
     result = await db.execute(
         select(ElectronicReceipt).where(ElectronicReceipt.id == receipt_id)
     )
@@ -328,9 +330,11 @@ async def update_receipt(
 async def delete_receipt(
     receipt_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
     """删除/作废电子收据（软删除：标记为已作废）."""
+    if user.role not in ("super_admin", "company_admin", "project_manager", "finance"):
+        raise HTTPException(status_code=403, detail="权限不足")
     result = await db.execute(
         select(ElectronicReceipt).where(ElectronicReceipt.id == receipt_id)
     )
@@ -341,7 +345,7 @@ async def delete_receipt(
     receipt.status = "已作废"
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+        tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
         action="void_receipt", biz_type="electronic_receipt", biz_id=receipt_id,
     ))
     return {"detail": "已作废"}
