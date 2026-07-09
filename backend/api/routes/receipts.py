@@ -237,9 +237,11 @@ async def _next_receipt_no(db: AsyncSession, receipt_date: date) -> str:
 async def create_receipt(
     req: ElectronicReceiptCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
     """创建电子收据（自动生成编号和大写金额）."""
+    if user.role not in ("super_admin", "company_admin", "project_manager", "finance"):
+        raise HTTPException(status_code=403, detail="权限不足")
     # 自动生成收据编号
     receipt_no = await _next_receipt_no(db, req.receipt_date)
     # 自动转换大写金额
@@ -258,12 +260,12 @@ async def create_receipt(
         handler=req.handler,
         approver=req.approver,
         remark=req.remark,
-        tenant_id=admin.tenant_id or 1,
+        tenant_id=user.tenant_id or 1,
     )
     db.add(receipt)
     await db.flush()
     db.add(AuditLog(
-        tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+        tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
         action="create_receipt", biz_type="electronic_receipt", biz_id=receipt.id,
     ))
     return receipt
