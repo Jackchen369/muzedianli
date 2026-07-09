@@ -115,9 +115,11 @@ async def download_file(
 async def delete_file(
     file_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
     """删除文件"""
+    if user.role not in ("super_admin", "company_admin", "project_manager"):
+        raise HTTPException(status_code=403, detail="权限不足")
     result = await db.execute(select(ContractFile).where(ContractFile.id == file_id))
     cf = result.scalar_one_or_none()
     if not cf:
