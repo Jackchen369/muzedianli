@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_admin, get_current_user, require_project
+from core.security import get_current_user, require_project
 from models import Project, Partner, AuditLog, User
 from schemas import ProjectCreate, ProjectResponse
 
@@ -75,8 +75,9 @@ async def update_project(
     project_id: int,
     req: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_project),
 ):
+    """编辑项目 — 管理员和项目负责人可操作"""
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
@@ -92,15 +93,17 @@ async def update_project(
 async def delete_project(
     project_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_project),
 ):
+    """删除项目 — 管理员和项目负责人可操作"""
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
+    tid = user.tenant_id or 1
     await db.delete(project)
     await db.flush()
-    db.add(AuditLog(tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+    db.add(AuditLog(tenant_id=tid, user_id=user.id, username=user.username,
                     action="delete_project", biz_type="project", biz_id=project_id))
     return {"detail": "删除成功"}
 
