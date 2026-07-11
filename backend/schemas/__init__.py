@@ -101,6 +101,8 @@ class ProjectResponse(ProjectCreate):
     status: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    revenue_amount: Optional[float] = None
+    unpaid_amount: Optional[float] = None
     owner_name: Optional[str] = None
 
     model_config = {"from_attributes": True}

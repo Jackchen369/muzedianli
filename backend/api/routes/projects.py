@@ -50,7 +50,19 @@ async def list_projects(
     result = await db.execute(query.order_by(Project.id.desc()))
     projects = result.scalars().all()
 
-    # Resolve owner names
+    # Compute revenue and unpaid amounts from invoice data
+    from sqlalchemy import func
+    from models import InvoiceOut
+
+    # Batch-load all invoice revenue for these projects
+    pids = [p.id for p in projects] or [0]
+    rev_q = await db.execute(
+        select(InvoiceOut.project_id, func.coalesce(func.sum(InvoiceOut.amount), 0).label("revenue"))
+        .where(InvoiceOut.project_id.in_(pids))
+        .group_by(InvoiceOut.project_id)
+    )
+    revenue_map = {row.project_id: float(row.revenue) for row in rev_q.all()}
+
     responses = []
     for p in projects:
         owner_name = ""
@@ -60,6 +72,9 @@ async def list_projects(
                 owner_name = name
         resp = ProjectResponse.model_validate(p)
         resp.owner_name = owner_name
+        resp.revenue_amount = revenue_map.get(p.id, 0.0)
+        settlement = float(p.settlement_amount or 0)
+        resp.unpaid_amount = round(settlement - resp.revenue_amount, 2)
         responses.append(resp)
     return responses
 

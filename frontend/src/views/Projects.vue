@@ -16,14 +16,26 @@
       <el-table-column label="中标单位" width="110">
         <template #default="{row}">{{ partnerMap[row.winning_bid_unit_id] || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="contract_amount" label="合同金额" width="110">
+      <el-table-column prop="contract_amount" label="合同金额" width="100">
         <template #default="{row}">¥{{ (row.contract_amount/10000).toFixed(1) }}万</template>
       </el-table-column>
-      <el-table-column label="分包比例" width="90">
-        <template #default="{row}">{{ row.subcontract_ratio != null ? (row.subcontract_ratio*100).toFixed(1)+'%' : '-' }}</template>
-      </el-table-column>
-      <el-table-column prop="settlement_amount" label="审定金额" width="110">
+      <el-table-column prop="settlement_amount" label="审定金额" width="100">
         <template #default="{row}">{{ row.settlement_amount ? '¥'+(row.settlement_amount/10000).toFixed(1)+'万' : '-' }}</template>
+      </el-table-column>
+      <el-table-column label="收入金额" width="100">
+        <template #default="{row}">¥{{ (row.revenue_amount/10000).toFixed(1) }}万</template>
+      </el-table-column>
+      <el-table-column label="未付金额" width="100">
+        <template #default="{row}"><span :style="{color:row.unpaid_amount>0?'#F56C6C':'#67C23A',fontWeight:'bold'}">{{ row.unpaid_amount ? '¥'+(row.unpaid_amount/10000).toFixed(1)+'万' : '¥0.0万' }}</span></template>
+      </el-table-column>
+      <el-table-column label="劳务分包" width="100">
+        <template #default="{row}">{{ row.labor_subcontract_amount ? '¥'+(row.labor_subcontract_amount/10000).toFixed(1)+'万' : '-' }}</template>
+      </el-table-column>
+      <el-table-column label="机械租赁" width="100">
+        <template #default="{row}">{{ row.machinery_rental_amount ? '¥'+(row.machinery_rental_amount/10000).toFixed(1)+'万' : '-' }}</template>
+      </el-table-column>
+      <el-table-column label="带电作业" width="100">
+        <template #default="{row}">{{ row.live_working_amount ? '¥'+(row.live_working_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
       <el-table-column label="签订日期" width="105">
         <template #default="{row}">{{ row.contract_sign_date || '-' }}</template>
