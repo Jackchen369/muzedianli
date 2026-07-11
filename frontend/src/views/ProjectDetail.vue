@@ -15,8 +15,11 @@
         <el-descriptions-item label="计划竣工日期">{{ project.end_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="实际开工日期">{{ project.actual_start_date || '-' }}</el-descriptions-item>
         <el-descriptions-item label="实际竣工日期">{{ project.actual_end_date || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="预算金额">{{ project.budget_amount ? '¥'+(project.budget_amount/10000).toFixed(1)+'万' : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="劳务分包">{{ project.labor_subcontract_amount ? '¥'+(project.labor_subcontract_amount/10000).toFixed(1)+'万' : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="机械租赁">{{ project.machinery_rental_amount ? '¥'+(project.machinery_rental_amount/10000).toFixed(1)+'万' : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="带电作业">{{ project.live_working_amount ? '¥'+(project.live_working_amount/10000).toFixed(1)+'万' : '-' }}</el-descriptions-item>
         <el-descriptions-item label="送审定案金额"><span style="color:#E6A23C;font-weight:bold">{{ project.settlement_amount ? '¥'+(project.settlement_amount/10000).toFixed(1)+'万' : '-' }}</span></el-descriptions-item>
+        <el-descriptions-item label="分包比例">{{ project.subcontract_ratio != null ? (project.subcontract_ratio*100).toFixed(1)+'%' : '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ project.created_at }}</el-descriptions-item>
         <el-descriptions-item label="项目编号">{{ project.project_code || '-' }}</el-descriptions-item>
       </el-descriptions>
