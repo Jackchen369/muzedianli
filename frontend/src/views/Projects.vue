@@ -5,53 +5,56 @@
       <el-button type="primary" @click="openNew">新建项目</el-button>
     </div>
     <el-table :data="list" stripe border style="width:100%">
-      <el-table-column prop="name" label="项目名称" min-width="150">
+      <el-table-column prop="name" label="项目名称" min-width="120" align="center">
         <template #default="{row}">
           <el-link type="primary" @click="router.push(`/projects/${row.id}`)">{{ row.name }}</el-link>
         </template>
       </el-table-column>
-      <el-table-column label="业主" width="100">
+      <el-table-column label="业主" min-width="100" align="center">
         <template #default="{row}">{{ ownerMap[row.owner_id] || '' }}</template>
       </el-table-column>
-      <el-table-column label="中标单位" width="110">
+      <el-table-column label="中标单位" min-width="100" align="center">
         <template #default="{row}">{{ partnerMap[row.winning_bid_unit_id] || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="contract_amount" label="合同金额" width="100">
+      <el-table-column label="合同金额" min-width="100" align="center">
         <template #default="{row}">¥{{ (row.contract_amount/10000).toFixed(1) }}万</template>
       </el-table-column>
-      <el-table-column prop="settlement_amount" label="审定金额" width="100">
+      <el-table-column label="审定金额" min-width="100" align="center">
         <template #default="{row}">{{ row.settlement_amount ? '¥'+(row.settlement_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
-      <el-table-column label="收入金额" width="100">
+      <el-table-column label="收入金额" min-width="100" align="center">
         <template #default="{row}">¥{{ (row.revenue_amount/10000).toFixed(1) }}万</template>
       </el-table-column>
-      <el-table-column label="未付金额" width="100">
+      <el-table-column label="未付金额" min-width="100" align="center">
         <template #default="{row}"><span :style="{color:row.unpaid_amount>0?'#F56C6C':'#67C23A',fontWeight:'bold'}">{{ row.unpaid_amount ? '¥'+(row.unpaid_amount/10000).toFixed(1)+'万' : '¥0.0万' }}</span></template>
       </el-table-column>
-      <el-table-column label="劳务分包" width="100">
+      <el-table-column label="劳务分包" min-width="100" align="center">
         <template #default="{row}">{{ row.labor_subcontract_amount ? '¥'+(row.labor_subcontract_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
-      <el-table-column label="机械租赁" width="100">
+      <el-table-column label="机械租赁" min-width="100" align="center">
         <template #default="{row}">{{ row.machinery_rental_amount ? '¥'+(row.machinery_rental_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
-      <el-table-column label="带电作业" width="100">
+      <el-table-column label="带电作业" min-width="100" align="center">
         <template #default="{row}">{{ row.live_working_amount ? '¥'+(row.live_working_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
-      <el-table-column label="签订日期" width="105">
+      <el-table-column label="分包比例" min-width="80" align="center">
+        <template #default="{row}">{{ row.subcontract_ratio != null ? (row.subcontract_ratio*100).toFixed(1)+'%' : '-' }}</template>
+      </el-table-column>
+      <el-table-column label="签订日期" min-width="100" align="center">
         <template #default="{row}">{{ row.contract_sign_date || '-' }}</template>
       </el-table-column>
-      <el-table-column label="计划" width="105">
+      <el-table-column label="计划" min-width="120" align="center">
         <template #default="{row}">{{ row.start_date || '-' }}~{{ row.end_date||'-' }}</template>
       </el-table-column>
-      <el-table-column label="实际" width="105">
+      <el-table-column label="实际" min-width="120" align="center">
         <template #default="{row}">{{ row.actual_start_date||'-' }}~{{ row.actual_end_date||'-' }}</template>
       </el-table-column>
-      <el-table-column label="状态" width="80">
+      <el-table-column label="状态" min-width="70" align="center">
         <template #default="{row}">
           <el-tag :type="row.status==='在建'?'primary':row.status==='已完工'?'success':'info'" size="small">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="130" fixed="right">
+      <el-table-column label="操作" min-width="120" align="center" fixed="right">
         <template #default="{row}">
           <el-button text type="primary" size="small" @click="openEdit(row)">编辑</el-button>
           <el-popconfirm title="确定删除该项目？" @confirm="handleDelete(row.id)">
