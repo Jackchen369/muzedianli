@@ -81,6 +81,9 @@ class ProjectCreate(BaseModel):
     winning_bid_unit_id: Optional[int] = None
     contract_amount: Optional[Decimal] = None
     budget_amount: Optional[Decimal] = None
+    labor_subcontract_amount: Optional[Decimal] = None
+    machinery_rental_amount: Optional[Decimal] = None
+    live_working_amount: Optional[Decimal] = None
     settlement_amount: Optional[Decimal] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None

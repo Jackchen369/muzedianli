@@ -70,7 +70,11 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12"><el-form-item label="合同金额"><el-input-number v-model="form.contract_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="12"><el-form-item label="预算金额"><el-input-number v-model="form.budget_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="劳务分包"><el-input-number v-model="form.labor_subcontract_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12"><el-form-item label="机械租赁"><el-input-number v-model="form.machinery_rental_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="带电作业"><el-input-number v-model="form.live_working_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12"><el-form-item label="审定金额"><el-input-number v-model="form.settlement_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
@@ -119,7 +123,8 @@ const isEdit = ref(false)
 const editId = ref(null)
 const form = reactive({
   name: '', owner_id: null, winning_bid_unit_id: null, subcontractor_ids: [],
-  contract_amount: 0, budget_amount: 0, settlement_amount: 0,
+  contract_amount: 0, budget_amount: 0, labor_subcontract_amount: 0, machinery_rental_amount: 0, live_working_amount: 0,
+  settlement_amount: 0,
   status: '在建', remark: '',
   contract_sign_date: null, start_date: null, end_date: null,
   actual_start_date: null, actual_end_date: null,
@@ -135,7 +140,8 @@ function openNew() {
   isEdit.value = false; editId.value = null
   Object.assign(form, {
     name: '', owner_id: null, winning_bid_unit_id: null, subcontractor_ids: [],
-    contract_amount: 0, budget_amount: 0, settlement_amount: 0,
+    contract_amount: 0, budget_amount: 0, labor_subcontract_amount: 0, machinery_rental_amount: 0, live_working_amount: 0,
+    settlement_amount: 0,
     status: '在建', remark: '',
     contract_sign_date: null, start_date: null, end_date: null,
     actual_start_date: null, actual_end_date: null,
@@ -150,6 +156,9 @@ function openEdit(row) {
     winning_bid_unit_id: row.winning_bid_unit_id || null, subcontractor_ids: [],
     contract_amount: row.contract_amount || 0,
     budget_amount: row.budget_amount || 0,
+    labor_subcontract_amount: row.labor_subcontract_amount || 0,
+    machinery_rental_amount: row.machinery_rental_amount || 0,
+    live_working_amount: row.live_working_amount || 0,
     settlement_amount: row.settlement_amount || 0,
     status: row.status, remark: row.remark || '',
     contract_sign_date: row.contract_sign_date || null,
