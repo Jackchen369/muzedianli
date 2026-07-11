@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_admin, get_current_user, require_invoice, require_admin
+from core.security import get_current_user, require_invoice
 from models import InvoiceOut, InvoiceIn, AuditLog, User
 from schemas import InvoiceOutCreate, InvoiceOutResponse, InvoiceInCreate, InvoiceInResponse
 
@@ -18,9 +18,10 @@ router = APIRouter(prefix="/invoices", tags=["发票管理"])
 async def create_invoice_out(
     req: InvoiceOutCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
-    inv = InvoiceOut(tenant_id=admin.tenant_id or 1, **req.model_dump())
+    """创建销项发票"""
+    inv = InvoiceOut(tenant_id=user.tenant_id or 1, **req.model_dump())
     if req.tax_rate and req.amount:
         rate = Decimal(str(req.tax_rate))
         inv.amount_including_tax = req.amount
@@ -29,7 +30,7 @@ async def create_invoice_out(
     db.add(inv)
     await db.flush()
     await db.refresh(inv)
-    db.add(AuditLog(tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+    db.add(AuditLog(tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
                     action="create_invoice_out", biz_type="invoice_out", biz_id=inv.id))
     return inv
 
@@ -54,8 +55,9 @@ async def update_invoice_out(
     invoice_id: int,
     req: InvoiceOutCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
+    """编辑销项发票"""
     result = await db.execute(select(InvoiceOut).where(InvoiceOut.id == invoice_id))
     inv = result.scalar_one_or_none()
     if not inv:
@@ -76,8 +78,9 @@ async def update_invoice_out(
 async def delete_invoice_out(
     invoice_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
+    """编辑销项发票"""
     result = await db.execute(select(InvoiceOut).where(InvoiceOut.id == invoice_id))
     inv = result.scalar_one_or_none()
     if not inv:
@@ -117,9 +120,10 @@ async def invoice_out_stats(
 async def create_invoice_in(
     req: InvoiceInCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
-    inv = InvoiceIn(tenant_id=admin.tenant_id or 1, **req.model_dump())
+    """编辑销项发票"""
+    inv = InvoiceIn(tenant_id=user.tenant_id or 1, **req.model_dump())
     if req.tax_rate and req.amount:
         rate = Decimal(str(req.tax_rate))
         inv.amount_including_tax = req.amount
@@ -127,7 +131,7 @@ async def create_invoice_in(
         inv.amount_excluding_tax = req.amount - inv.tax_amount
     db.add(inv)
     await db.flush()
-    db.add(AuditLog(tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+    db.add(AuditLog(tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
                     action="create_invoice_in", biz_type="invoice_in", biz_id=inv.id))
     return inv
 
@@ -152,8 +156,9 @@ async def update_invoice_in(
     invoice_id: int,
     req: InvoiceInCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
+    """编辑销项发票"""
     result = await db.execute(select(InvoiceIn).where(InvoiceIn.id == invoice_id))
     inv = result.scalar_one_or_none()
     if not inv:
@@ -174,8 +179,9 @@ async def update_invoice_in(
 async def delete_invoice_in(
     invoice_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_invoice),
 ):
+    """编辑销项发票"""
     result = await db.execute(select(InvoiceIn).where(InvoiceIn.id == invoice_id))
     inv = result.scalar_one_or_none()
     if not inv:

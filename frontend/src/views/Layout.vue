@@ -6,7 +6,7 @@
         <el-menu-item v-if="isFinance" index="/dashboard"><el-icon><DataAnalysis /></el-icon><span>仪表盘</span></el-menu-item>
         <el-menu-item v-if="isProject" index="/projects"><el-icon><Folder /></el-icon><span>项目管理</span></el-menu-item>
         <el-menu-item v-if="isAdmin || isProject" index="/partners"><el-icon><UserFilled /></el-icon><span>往来单位</span></el-menu-item>
-        <el-menu-item v-if="isFinance" index="/invoices"><el-icon><Ticket /></el-icon><span>发票管理</span></el-menu-item>
+        <el-menu-item v-if="isFinance || isProject" index="/invoices"><el-icon><Ticket /></el-icon><span>发票管理</span></el-menu-item>
         <el-menu-item v-if="isFinance" index="/finance"><el-icon><Coin /></el-icon><span>财务管理</span></el-menu-item>
         <el-menu-item v-if="isFinance" index="/taxes"><el-icon><Warning /></el-icon><span>税金管理</span></el-menu-item>
         <el-menu-item v-if="isFinance" index="/receipts"><el-icon><Document /></el-icon><span>电子收据</span></el-menu-item>
