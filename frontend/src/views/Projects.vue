@@ -1,8 +1,12 @@
 <template>
   <div>
-    <div style="margin-bottom:16px;display:flex;justify-content:space-between">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:18px;font-weight:bold">项目管理</span>
-      <el-button type="primary" @click="openNew">新建项目</el-button>
+      <div>
+        <el-input v-model="search" placeholder="搜索项目名称" clearable style="width:220px;margin-right:8px" @input="fetchList" />
+        <el-button @click="exportExcel">导出Excel</el-button>
+        <el-button type="primary" @click="openNew">新建项目</el-button>
+      </div>
     </div>
     <el-table :data="list" stripe border style="width:100%">
       <el-table-column prop="name" label="项目名称" min-width="120" align="center">
@@ -144,6 +148,7 @@ const partnerMap = ref({})
 const showDialog = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
+const search = ref('')
 const ratioDisplay = computed(() => {
   const total = (form.labor_subcontract_amount || 0) + (form.machinery_rental_amount || 0) + (form.live_working_amount || 0)
   const contract = form.contract_amount || 0
@@ -159,7 +164,10 @@ const form = reactive({
   actual_start_date: null, actual_end_date: null,
 })
 
-async function fetchList() { list.value = await request.get('/projects') }
+async function fetchList() {
+  const params = { search: search.value || undefined }
+  list.value = await request.get('/projects', { params })
+}
 async function fetchPartners() {
   partners.value = await request.get('/partners')
   partners.value.forEach(p => { ownerMap.value[p.id] = p.name; partnerMap.value[p.id] = p.name })
@@ -226,6 +234,18 @@ async function saveProject() {
 async function handleDelete(id) {
   await request.delete(`/projects/${id}`)
   ElMessage.success('删除成功'); fetchList()
+}
+
+async function downloadExcel(url, filename) {
+  const res = await request.get(url, { responseType: 'blob' })
+  const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename
+  a.click(); URL.revokeObjectURL(a.href)
+  ElMessage.success('导出成功')
+}
+async function exportExcel() {
+  const keyword = search.value || ''
+  await downloadExcel(`/projects/export?search=${encodeURIComponent(keyword)}`, `项目管理_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
 onMounted(() => { fetchPartners(); fetchList() })

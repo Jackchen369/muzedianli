@@ -1,5 +1,6 @@
 """Project (项目) CRUD."""
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,10 +44,13 @@ async def create_project(
 async def list_projects(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_project),
+    search: Optional[str] = None,
 ):
     query = select(Project)
     if user.role != "super_admin" and user.tenant_id:
         query = query.where(Project.tenant_id == user.tenant_id)
+    if search:
+        query = query.where(Project.name.ilike(f"%{search}%"))
     result = await db.execute(query.order_by(Project.id.desc()))
     projects = result.scalars().all()
 
@@ -77,6 +81,100 @@ async def list_projects(
         resp.unpaid_amount = round(settlement - resp.revenue_amount, 2)
         responses.append(resp)
     return responses
+
+
+@router.get("/export")
+async def export_projects(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_project),
+    search: Optional[str] = None,
+):
+    """导出项目列表为 Excel"""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+
+    query = select(Project)
+    if user.role != "super_admin" and user.tenant_id:
+        query = query.where(Project.tenant_id == user.tenant_id)
+    if search:
+        query = query.where(Project.name.ilike(f"%{search}%"))
+    result = await db.execute(query.order_by(Project.id.desc()))
+    projects = result.scalars().all()
+
+    # Compute revenue
+    from sqlalchemy import func
+    from models import InvoiceOut
+    pids = [p.id for p in projects] or [0]
+    rev_q = await db.execute(
+        select(InvoiceOut.project_id, func.coalesce(func.sum(InvoiceOut.amount), 0).label("revenue"))
+        .where(InvoiceOut.project_id.in_(pids)).group_by(InvoiceOut.project_id)
+    )
+    revenue_map = {row.project_id: float(row.revenue) for row in rev_q.all()}
+
+    # Resolve partner names
+    partner_ids = set()
+    for p in projects:
+        if p.owner_id: partner_ids.add(p.owner_id)
+        if p.winning_bid_unit_id: partner_ids.add(p.winning_bid_unit_id)
+    partners_q = await db.execute(select(Partner).where(Partner.id.in_(list(partner_ids) or [0])))
+    pname = {pp.id: pp.name for pp in partners_q.scalars().all()}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "项目管理"
+
+    # Header style
+    h_font = Font(bold=True, size=11, color="FFFFFF")
+    h_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    h_align = Alignment(horizontal="center", vertical="center")
+    thin = Border(left=Side(style="thin"), right=Side(style="thin"),
+                  top=Side(style="thin"), bottom=Side(style="thin"))
+
+    headers = ["项目名称", "业主", "中标单位", "合同金额", "审定金额", "收入金额", "未付金额",
+               "劳务分包", "机械租赁", "带电作业", "分包比例", "签订日期", "计划开工", "计划竣工",
+               "实际开工", "实际竣工", "状态"]
+    for ci, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.font = h_font; c.fill = h_fill; c.alignment = h_align; c.border = thin
+
+    for ri, p in enumerate(projects, 2):
+        rev = revenue_map.get(p.id, 0.0)
+        sett = float(p.settlement_amount or 0)
+        unpaid = round(sett - rev, 2)
+        total_sub = (float(p.labor_subcontract_amount or 0) + float(p.machinery_rental_amount or 0) + float(p.live_working_amount or 0))
+        ratio = round(total_sub / float(p.contract_amount or 1), 4) if p.contract_amount else None
+
+        vals = [
+            p.name,
+            pname.get(p.owner_id, ""),
+            pname.get(p.winning_bid_unit_id, ""),
+            float(p.contract_amount or 0),
+            sett, rev, unpaid,
+            float(p.labor_subcontract_amount or 0),
+            float(p.machinery_rental_amount or 0),
+            float(p.live_working_amount or 0),
+            f"{ratio*100:.1f}%" if ratio else "-",
+            p.contract_sign_date or "",
+            p.start_date or "", p.end_date or "",
+            p.actual_start_date or "", p.actual_end_date or "",
+            p.status,
+        ]
+        for ci, v in enumerate(vals, 1):
+            c = ws.cell(row=ri, column=ci, value=v)
+            c.alignment = h_align; c.border = thin
+
+    # Auto-width
+    for col in ws.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=8)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 30)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": "attachment; filename=projects.xlsx"})
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
