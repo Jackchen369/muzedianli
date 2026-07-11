@@ -84,6 +84,7 @@ class ProjectCreate(BaseModel):
     labor_subcontract_amount: Optional[Decimal] = None
     machinery_rental_amount: Optional[Decimal] = None
     live_working_amount: Optional[Decimal] = None
+    subcontract_ratio: Optional[float] = None
     settlement_amount: Optional[Decimal] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None

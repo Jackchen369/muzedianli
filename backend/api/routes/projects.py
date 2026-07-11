@@ -18,7 +18,14 @@ async def create_project(
     user: User = Depends(require_project),
 ):
     """创建项目 — 管理员和项目负责人可操作"""
-    project = Project(**req.model_dump())
+    data = req.model_dump()
+    # Auto-calculate subcontract ratio
+    total = (data.get("labor_subcontract_amount") or 0) + \
+            (data.get("machinery_rental_amount") or 0) + \
+            (data.get("live_working_amount") or 0)
+    contract = data.get("contract_amount") or 0
+    data["subcontract_ratio"] = round(float(total) / float(contract), 4) if contract else None
+    project = Project(**data)
     tid = user.tenant_id or 1
     project.tenant_id = tid
     db.add(project)
@@ -82,7 +89,14 @@ async def update_project(
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
-    for key, val in req.model_dump().items():
+    data = req.model_dump()
+    # Auto-calculate subcontract ratio
+    total = (data.get("labor_subcontract_amount") or 0) + \
+            (data.get("machinery_rental_amount") or 0) + \
+            (data.get("live_working_amount") or 0)
+    contract = data.get("contract_amount") or 0
+    data["subcontract_ratio"] = round(float(total) / float(contract), 4) if contract else None
+    for key, val in data.items():
         setattr(project, key, val)
     await db.flush()
     await db.refresh(project)

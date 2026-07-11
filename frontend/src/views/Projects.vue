@@ -19,6 +19,9 @@
       <el-table-column prop="contract_amount" label="合同金额" width="110">
         <template #default="{row}">¥{{ (row.contract_amount/10000).toFixed(1) }}万</template>
       </el-table-column>
+      <el-table-column label="分包比例" width="90">
+        <template #default="{row}">{{ row.subcontract_ratio != null ? (row.subcontract_ratio*100).toFixed(1)+'%' : '-' }}</template>
+      </el-table-column>
       <el-table-column prop="settlement_amount" label="审定金额" width="110">
         <template #default="{row}">{{ row.settlement_amount ? '¥'+(row.settlement_amount/10000).toFixed(1)+'万' : '-' }}</template>
       </el-table-column>
@@ -78,6 +81,11 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12"><el-form-item label="审定金额"><el-input-number v-model="form.settlement_amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="分包比例">
+            <el-input :model-value="ratioDisplay" disabled style="width:100%">
+              <template #append>%</template>
+            </el-input>
+          </el-form-item></el-col>
         </el-row>
         <el-divider content-position="left">日期</el-divider>
         <el-row :gutter="16">
@@ -108,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/api/request'
@@ -121,6 +129,12 @@ const partnerMap = ref({})
 const showDialog = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
+const ratioDisplay = computed(() => {
+  const total = (form.labor_subcontract_amount || 0) + (form.machinery_rental_amount || 0) + (form.live_working_amount || 0)
+  const contract = form.contract_amount || 0
+  if (!contract) return '0.0'
+  return ((total / contract) * 100).toFixed(1)
+})
 const form = reactive({
   name: '', owner_id: null, winning_bid_unit_id: null, subcontractor_ids: [],
   contract_amount: 0, budget_amount: 0, labor_subcontract_amount: 0, machinery_rental_amount: 0, live_working_amount: 0,

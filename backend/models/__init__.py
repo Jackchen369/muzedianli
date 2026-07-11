@@ -106,6 +106,7 @@ class Project(Base, TimestampMixin, TenantMixin):
     labor_subcontract_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="劳务分包")
     machinery_rental_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="机械租赁")
     live_working_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="带电作业")
+    subcontract_ratio: Mapped[Optional[float]] = mapped_column(Float, comment="分包比例(自动)")
     settlement_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="送审定案金额")
     start_date: Mapped[Optional[date]] = mapped_column(Date, comment="计划开工日期")
     end_date: Mapped[Optional[date]] = mapped_column(Date, comment="计划竣工日期")
