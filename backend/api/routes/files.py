@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.config import settings
-from core.security import get_current_admin, get_current_user
+from core.security import get_current_user
 from models import ContractFile, AuditLog, User
 
 router = APIRouter(prefix="/files", tags=["文件管理"])

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_admin, get_current_user
+from core.security import get_current_user, require_project
 from models import ProjectSubcontractor, Partner, AuditLog, User
 from pydantic import BaseModel
 from typing import Optional
@@ -30,14 +30,14 @@ class SubcontractorResponse(SubcontractorCreate):
 async def add_subcontractor(
     req: SubcontractorCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_project),
 ):
     """为项目添加分包单位"""
     sc = ProjectSubcontractor(**req.model_dump())
     db.add(sc)
     await db.flush()
     await db.refresh(sc)
-    db.add(AuditLog(tenant_id=admin.tenant_id or 1, user_id=admin.id, username=admin.username,
+    db.add(AuditLog(tenant_id=user.tenant_id or 1, user_id=user.id, username=user.username,
                     action="add_subcontractor", biz_type="subcontractor", biz_id=sc.id))
     # Resolve partner name
     r = await db.execute(select(Partner.name).where(Partner.id == req.partner_id))
@@ -72,7 +72,7 @@ async def list_subcontractors(
 async def remove_subcontractor(
     sc_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(require_project),
 ):
     """移除分包单位"""
     result = await db.execute(select(ProjectSubcontractor).where(ProjectSubcontractor.id == sc_id))
