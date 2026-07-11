@@ -60,10 +60,12 @@
       </el-table-column>
       <el-table-column label="操作" min-width="120" align="center" fixed="right">
         <template #default="{row}">
-          <el-button text type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-          <el-popconfirm title="确定删除该项目？" @confirm="handleDelete(row.id)">
-            <template #reference><el-button text type="danger" size="small">删除</el-button></template>
-          </el-popconfirm>
+          <div style="display:flex;gap:4px;align-items:center;justify-content:center">
+            <el-button text type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+            <el-popconfirm title="确定删除该项目？" @confirm="handleDelete(row.id)">
+              <template #reference><el-button text type="danger" size="small">删除</el-button></template>
+            </el-popconfirm>
+          </div>
         </template>
       </el-table-column>
     </el-table>
