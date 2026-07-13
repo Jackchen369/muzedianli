@@ -254,7 +254,7 @@ async function saveInvoice() {
 }
 
 function viewFile(row) {
-  if (row.file_path) window.open(`/api/v1/files/download/${row.file_path}`, '_blank')
+  if (row.file_path) window.open(`/api/v1/files/by-filename/${row.file_path}`, '_blank')
 }
 
 async function delOut(id) { await request.delete(`/invoices/out/${id}`); ElMessage.success('已删除'); fetch() }

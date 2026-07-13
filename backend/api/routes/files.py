@@ -137,8 +137,16 @@ async def delete_file(
 
 @router.get("/by-filename/{filename:path}")
 async def get_file_by_filename(filename: str):
-    """通过文件名直接获取上传的文件（用于印章图片等）"""
+    """通过文件名直接获取上传的文件（用于预览发票/印章图片等）"""
+    import mimetypes
     file_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件不存在")
-    return FileResponse(path=file_path)
+
+    # 根据扩展名判断是否可预览
+    ext = os.path.splitext(filename)[1].lower()
+    preview_types = {'.pdf', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'}
+    media_type, _ = mimetypes.guess_type(filename)
+    disposition = "inline" if ext in preview_types else "attachment"
+    return FileResponse(path=file_path, media_type=media_type or "application/octet-stream",
+                        filename=filename, headers={"Content-Disposition": f'{disposition}; filename="{filename}"'})
