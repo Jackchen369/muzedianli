@@ -36,8 +36,9 @@
         <el-table-column label="类型" width="80"><template #default="{row}"><el-tag size="small">{{ row.filetype }}</el-tag></template></el-table-column>
         <el-table-column label="大小" width="80"><template #default="{row}">{{ (row.filesize/1024).toFixed(1) }}KB</template></el-table-column>
         <el-table-column label="上传时间" width="160"><template #default="{row}">{{ row.created_at }}</template></el-table-column>
-        <el-table-column label="操作" width="140">
+        <el-table-column label="操作" width="200">
           <template #default="{row}">
+            <el-button v-if="row.filepath" text type="primary" size="small" @click="previewFile(row)">预览</el-button>
             <el-button text type="primary" size="small" @click="downloadFile(row)">下载</el-button>
             <el-popconfirm title="确定删除？" @confirm="deleteFile(row)"><template #reference><el-button text type="danger" size="small">删除</el-button></template></el-popconfirm>
           </template>
@@ -158,6 +159,9 @@ async function fetchData() {
   } catch {}
 }
 
+function previewFile(f) {
+  if (f.filepath) window.open(`/api/v1/files/by-filename/${f.filepath}`, '_blank')
+}
 async function downloadFile(f) {
   try {
     const resp = await fetch(`/api/v1/files/download/${f.id}`, { headers: { Authorization: `Bearer ${token.value}` } })
