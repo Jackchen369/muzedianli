@@ -121,6 +121,7 @@ class InvoiceOutCreate(BaseModel):
     tax_amount: Optional[Decimal] = None
     amount_including_tax: Optional[Decimal] = None
     invoice_date: Optional[date] = None
+    file_path: Optional[str] = None
     remark: Optional[str] = None
 
 class InvoiceOutResponse(InvoiceOutCreate):
@@ -146,6 +147,7 @@ class InvoiceInCreate(BaseModel):
     actual_tax_received: Optional[Decimal] = None
     invoice_date: Optional[date] = None
     is_deductible: bool = True
+    file_path: Optional[str] = None
 class InvoiceInResponse(InvoiceInCreate):
     id: int
     tenant_id: int
