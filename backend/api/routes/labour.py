@@ -142,9 +142,9 @@ async def list_staff(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """施工人员列表 — 管理员看全部，员工只看自己"""
+    """施工人员列表 — 管理员和考勤员看全部，员工只看自己"""
     query = select(Staff).where(Staff.is_active == True)
-    if not _is_admin(user):
+    if not _is_admin(user) and user.role != "attendance":
         query = query.where(Staff.user_id == user.id)
     result = await db.execute(query.order_by(Staff.id))
     return result.scalars().all()
