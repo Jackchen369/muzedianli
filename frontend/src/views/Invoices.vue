@@ -179,14 +179,20 @@ const dialogTitle = computed(() => {
 })
 
 const stats = computed(() => {
-  const t = { '乙→甲':0, '丙→乙':0, '丙→甲':0 }
-  const totalTax = { out:0, in:0 }
-  outList.value.forEach(f => { if (t[f.invoice_type]!==undefined) t[f.invoice_type] += f.amount; totalTax.out += f.tax_amount||0 })
-  inList.value.forEach(f => { totalTax.in += f.actual_tax_received||0 })
+  const t = { '丙→乙':0, '丙→甲':0 }
+  let taxC = 0  // 丙公司的销项税额
+  outList.value.forEach(f => {
+    if (f.invoice_type === '丙→乙' || f.invoice_type === '丙→甲') {
+      t[f.invoice_type] += f.amount
+      taxC += f.tax_amount || 0
+    }
+  })
+  let taxIn = 0  // 供货商的实收税金
+  inList.value.forEach(f => { taxIn += f.actual_tax_received || 0 })
   return [
     { label: '总开票额(含税)', value: `¥${(Object.values(t).reduce((a,b)=>a+b,0)/10000).toFixed(1)}万`, color: '#409EFF' },
-    { label: '总销项税额', value: `¥${(totalTax.out/10000).toFixed(1)}万`, color: '#67C23A' },
-    { label: '总实收税金', value: `¥${(totalTax.in/10000).toFixed(1)}万`, color: '#E6A23C' },
+    { label: '总销项税额', value: `¥${(taxC/10000).toFixed(1)}万`, color: '#67C23A' },
+    { label: '总实收税金', value: `¥${(taxIn/10000).toFixed(1)}万`, color: '#E6A23C' },
     { label: '总票据数', value: `${outList.value.length+inList.value.length}`, color: '#303133' },
   ]
 })
