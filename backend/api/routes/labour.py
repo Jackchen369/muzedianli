@@ -241,6 +241,7 @@ async def create_work_hour(
         weather_subsidy=req.weather_subsidy,
         daily_total=daily_total,
         content=req.content,
+        created_by=user.id,
     )
     db.add(work_hour)
     await db.flush()
@@ -254,10 +255,14 @@ async def list_work_hours(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """工时记录列表 — 管理员看全部，员工只看自己的"""
+    """工时记录列表 — 管理员看全部，考勤员看自己创建的，其他看自己的"""
     query = select(WorkHour).order_by(WorkHour.work_date.desc(), WorkHour.id)
-    if not _is_admin(user):
-        # 通过 staff.user_id 过滤
+    if _is_admin(user):
+        pass  # 看全部
+    elif user.role == "attendance":
+        query = query.where(WorkHour.created_by == user.id)
+    else:
+        # 普通员工通过 staff.user_id 过滤
         subq = select(Staff.id).where(Staff.user_id == user.id).scalar_subquery()
         query = query.where(WorkHour.staff_id.in_(subq))
     if staff_id:
@@ -289,13 +294,19 @@ async def update_work_hour(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """更新工时记录 — 管理员和工地考勤员可操作，重新计算日合计"""
+    """更新工时记录 — 管理员可编辑全部，考勤员只能编辑自己创建的未审核记录"""
     if not _can_edit_hours(user):
         raise HTTPException(status_code=403, detail="权限不足")
     result = await db.execute(select(WorkHour).where(WorkHour.id == work_hour_id))
     wh = result.scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="工时记录不存在")
+    # 考勤员只能编辑自己创建的未审核记录
+    if user.role == "attendance":
+        if wh.created_by != user.id:
+            raise HTTPException(status_code=403, detail="只能编辑自己创建的记录")
+        if wh.is_approved:
+            raise HTTPException(status_code=403, detail="已审核的记录不可编辑")
 
     # 重新计算日合计
     staff_result = await db.execute(select(Staff).where(Staff.id == req.staff_id))
@@ -338,13 +349,20 @@ async def approve_work_hour(
 async def delete_work_hour(
     work_hour_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
-    """删除工时记录"""
+    """删除工时记录 — 管理员可删除全部，考勤员只能删除自己创建的未审核记录"""
     result = await db.execute(select(WorkHour).where(WorkHour.id == work_hour_id))
     wh = result.scalar_one_or_none()
     if not wh:
         raise HTTPException(status_code=404, detail="工时记录不存在")
+    if not _is_admin(user):
+        if user.role != "attendance":
+            raise HTTPException(status_code=403, detail="权限不足")
+        if wh.created_by != user.id:
+            raise HTTPException(status_code=403, detail="只能删除自己创建的记录")
+        if wh.is_approved:
+            raise HTTPException(status_code=403, detail="已审核的记录不可删除")
     await db.delete(wh)
     await db.flush()
     return {"detail": "删除成功"}

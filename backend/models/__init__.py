@@ -215,6 +215,7 @@ class WorkHour(Base, TimestampMixin, TenantMixin):
     daily_total: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), default=0, comment="日合计")
     content: Mapped[Optional[str]] = mapped_column(Text, comment="工作内容")
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("sys_user.id"), nullable=True, comment="创建人")
 
 
 # ─── Salary (薪酬) ───────────────────────────────────────

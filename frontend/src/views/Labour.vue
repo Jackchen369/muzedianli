@@ -59,7 +59,7 @@
           <el-table-column label="操作" min-width="100">
             <template #default="{row}">
               <el-button v-if="isAdmin || isAttendance" text type="primary" size="small" @click="editHour(row)">编辑</el-button>
-              <el-popconfirm v-if="isAdmin" title="确定删除？" @confirm="delHour(row.id)"><template #reference><el-button text type="danger" size="small">删</el-button></template></el-popconfirm>
+              <el-popconfirm v-if="isAdmin || (isAttendance && !row.is_approved)" title="确定删除？" @confirm="delHour(row.id)"><template #reference><el-button text type="danger" size="small">删</el-button></template></el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
