@@ -183,12 +183,12 @@ const stats = computed(() => {
   let taxC = 0  // 丙公司的销项税额
   outList.value.forEach(f => {
     if (f.invoice_type === '丙→乙' || f.invoice_type === '丙→甲') {
-      t[f.invoice_type] += f.amount
-      taxC += f.tax_amount || 0
+      t[f.invoice_type] += Number(f.amount) || 0
+      taxC += Number(f.tax_amount) || 0
     }
   })
   let taxIn = 0  // 供货商的实收税金
-  inList.value.forEach(f => { taxIn += f.actual_tax_received || 0 })
+  inList.value.forEach(f => { taxIn += Number(f.actual_tax_received) || 0 })
   return [
     { label: '总开票额(含税)', value: `¥${(Object.values(t).reduce((a,b)=>a+b,0)/10000).toFixed(1)}万`, color: '#409EFF' },
     { label: '总销项税额', value: `¥${(taxC/10000).toFixed(1)}万`, color: '#67C23A' },
