@@ -187,8 +187,10 @@ const stats = computed(() => {
       taxC += Number(f.tax_amount) || 0
     }
   })
-  let taxIn = 0  // 供货商的实收税金
-  inList.value.forEach(f => { taxIn += Number(f.actual_tax_received) || 0 })
+  let taxIn = 0  // 供货商的实收税金（仅可抵扣）
+  inList.value.forEach(f => {
+    if (f.is_deductible) taxIn += Number(f.actual_tax_received) || 0
+  })
   return [
     { label: '总开票额(含税)', value: `¥${(Object.values(t).reduce((a,b)=>a+b,0)/10000).toFixed(1)}万`, color: '#409EFF' },
     { label: '总销项税额', value: `¥${(taxC/10000).toFixed(1)}万`, color: '#67C23A' },
