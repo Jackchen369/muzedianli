@@ -152,8 +152,10 @@ async def finance_summary(
     r1 = await db.execute(
         select(func.coalesce(func.sum(InvoiceOut.amount), 0)).select_from(query_base.subquery())
     )
-    # Actually let's recalculate properly
-    q = select(func.coalesce(func.sum(InvoiceOut.amount), 0))
+    # 销项总额仅统计丙公司（丙→乙/丙→甲）
+    q = select(func.coalesce(func.sum(InvoiceOut.amount), 0)).where(
+        InvoiceOut.invoice_type.in_(["丙→乙", "丙→甲"])
+    )
     if user.role != "super_admin" and user.tenant_id:
         q = q.where(InvoiceOut.tenant_id == user.tenant_id)
     total_invoice = (await db.execute(q)).scalar()
