@@ -69,6 +69,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination v-if="listTotal>listPageSize" v-model:current-page="listPage" :page-size="listPageSize" :total="listTotal" layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10,20,50,100]" style="margin-top:8px;justify-content:center" @current-change="fetchList" @size-change="listPageSize=$event;fetchList()" />
 
     <el-dialog v-model="showDialog" :title="isEdit?'编辑项目':'新建项目'" width="600px">
       <el-form :model="form" label-width="110px">
@@ -151,6 +152,9 @@ const showDialog = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
 const search = ref('')
+const listPage = ref(1)
+const listTotal = ref(0)
+const listPageSize = ref(10)
 const ratioDisplay = computed(() => {
   const total = (form.labor_subcontract_amount || 0) + (form.machinery_rental_amount || 0) + (form.live_working_amount || 0)
   const contract = form.contract_amount || 0
@@ -167,8 +171,10 @@ const form = reactive({
 })
 
 async function fetchList() {
-  const params = { search: search.value || undefined }
-  list.value = await request.get('/projects', { params })
+  const params = { search: search.value || undefined, page: listPage.value, page_size: listPageSize.value }
+  const res = await request.get('/projects', { params })
+  list.value = res.items || []
+  listTotal.value = res.total || 0
 }
 async function fetchPartners() {
   partners.value = await request.get('/partners')

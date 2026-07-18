@@ -1,7 +1,7 @@
 """Project (项目) CRUD."""
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
@@ -40,18 +40,25 @@ async def create_project(
     return result.scalar_one()
 
 
-@router.get("", response_model=list[ProjectResponse])
+@router.get("")
 async def list_projects(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_project),
     search: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
 ):
+    page_size = min(page_size, 100)
     query = select(Project)
+    count_q = select(func.count(Project.id))
     if user.role != "super_admin" and user.tenant_id:
         query = query.where(Project.tenant_id == user.tenant_id)
+        count_q = count_q.where(Project.tenant_id == user.tenant_id)
     if search:
         query = query.where(Project.name.ilike(f"%{search}%"))
-    result = await db.execute(query.order_by(Project.id.desc()))
+        count_q = count_q.where(Project.name.ilike(f"%{search}%"))
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(query.order_by(Project.id.desc()).offset((page - 1) * page_size).limit(page_size))
     projects = result.scalars().all()
 
     # Compute revenue and unpaid amounts from invoice data
@@ -80,7 +87,7 @@ async def list_projects(
         settlement = float(p.settlement_amount or 0)
         resp.unpaid_amount = round(settlement - resp.revenue_amount, 2)
         responses.append(resp)
-    return responses
+    return {"items": responses, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/export")
