@@ -62,7 +62,6 @@ async def list_projects(
     projects = result.scalars().all()
 
     # Compute revenue and unpaid amounts from invoice data
-    from sqlalchemy import func
     from models import InvoiceOut
 
     # Batch-load all invoice revenue for these projects
