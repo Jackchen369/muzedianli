@@ -27,20 +27,31 @@ async def create_pricing(
     return item
 
 
-@router.get("", response_model=list[EngineeringPricingResponse])
+@router.get("")
 async def list_pricing(
     project_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_project),
+    page: int = 1,
+    page_size: int = 10,
 ):
     """工程计价列表，可按项目筛选"""
+    page_size = min(page_size, 100)
     query = select(EngineeringPricing)
+    count_q = select(func.count(EngineeringPricing.id))
     if user.role != "super_admin" and user.tenant_id:
         query = query.where(EngineeringPricing.tenant_id == user.tenant_id)
+        count_q = count_q.where(EngineeringPricing.tenant_id == user.tenant_id)
     if project_id:
         query = query.where(EngineeringPricing.project_id == project_id)
-    result = await db.execute(query.order_by(EngineeringPricing.id.desc()))
-    return result.scalars().all()
+        count_q = count_q.where(EngineeringPricing.project_id == project_id)
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(
+        query.order_by(EngineeringPricing.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return {"items": result.scalars().all(), "total": total, "page": page, "page_size": page_size}
 
 
 @router.put("/{item_id}", response_model=EngineeringPricingResponse)

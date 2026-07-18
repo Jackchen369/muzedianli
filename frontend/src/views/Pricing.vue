@@ -33,6 +33,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination v-if="total>pageSize" v-model:current-page="page" :page-size="pageSize" :total="total" layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10,20,50,100]" style="margin-top:8px;justify-content:center" @current-change="fetch" @size-change="pageSize=$event;fetch()" />
 
     <el-dialog v-model="showDialog" :title="isEdit?'编辑计价':'新增计价'" width="500px">
       <el-form :model="form" label-width="100px">
@@ -65,12 +66,18 @@ const totalAmount = ref(0)
 const showDialog = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
+const page = ref(1)
+const total = ref(0)
+const pageSize = ref(10)
 const form = reactive({ project_id: null, item_name: '', amount: 0, pricing_date: null, remark: '' })
 
 async function fetch() {
-  const pf = filterProject.value ? `?project_id=${filterProject.value}` : ''
-  list.value = await request.get('/pricing' + pf)
-  const t = await request.get('/pricing/total' + pf)
+  const pf = filterProject.value ? `&project_id=${filterProject.value}` : ''
+  const res = await request.get(`/pricing?page=${page.value}&page_size=${pageSize.value}${pf}`)
+  list.value = res.items || []
+  total.value = res.total || 0
+  // total amount from all data (unpaginated)
+  const t = await request.get('/pricing/total' + '?' + (filterProject.value ? `project_id=${filterProject.value}` : ''))
   totalAmount.value = t.total || 0
   projects.value = await request.get('/projects')
   projects.value.forEach(p => projMap.value[p.id] = p.name)
