@@ -43,6 +43,7 @@
             </template>
           </el-table-column>
         </el-table>
+        <el-pagination v-if="outTotal>pageSize" v-model:current-page="outPage" :page-size="pageSize" :total="outTotal" layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10,20,50,100]" style="margin-top:8px;justify-content:center" @current-change="fetch" @size-change="pageSize=$event;fetch()" />
       </el-tab-pane>
 
       <!-- 进项发票 -->
@@ -74,6 +75,7 @@
             </template>
           </el-table-column>
         </el-table>
+        <el-pagination v-if="inTotal>pageSize" v-model:current-page="inPage" :page-size="pageSize" :total="inTotal" layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10,20,50,100]" style="margin-top:8px;justify-content:center" @current-change="fetch" @size-change="pageSize=$event;fetch()" />
       </el-tab-pane>
     </el-tabs>
 
@@ -143,6 +145,14 @@ const filterProject = ref('')
 const showNew = ref(false)
 const editId = ref(null)
 const uploadFilePath = ref('')
+const outPage = ref(1)
+const outTotal = ref(0)
+const inPage = ref(1)
+const inTotal = ref(0)
+const pageSize = ref(10)
+// All data for stats computation (unpaginated)
+const allOutList = ref([])
+const allInList = ref([])
 
 const form = reactive({
   project_id:null, partner_id:null, invoice_type:'乙→甲',
@@ -181,14 +191,14 @@ const dialogTitle = computed(() => {
 const stats = computed(() => {
   const t = { '丙→乙':0, '丙→甲':0 }
   let taxC = 0  // 丙公司的销项税额
-  outList.value.forEach(f => {
+  allOutList.value.forEach(f => {
     if (f.invoice_type === '丙→乙' || f.invoice_type === '丙→甲') {
       t[f.invoice_type] += Number(f.amount) || 0
       taxC += Number(f.tax_amount) || 0
     }
   })
   let taxIn = 0  // 供货商的实收税金（仅可抵扣）
-  inList.value.forEach(f => {
+  allInList.value.forEach(f => {
     if (f.is_deductible) taxIn += Number(f.actual_tax_received) || 0
   })
   return [
@@ -200,11 +210,23 @@ const stats = computed(() => {
 })
 
 async function fetch() {
-  const pf = filterProject.value ? `?project_id=${filterProject.value}` : ''
-  outList.value = await request.get('/invoices/out'+pf)
-  inList.value = await request.get('/invoices/in'+pf)
-  partners.value = await request.get('/partners')
-  projects.value = await request.get('/projects')
+  const pf = filterProject.value ? `&project_id=${filterProject.value}` : ''
+  const [outRes, inRes, allOut, allIn, partnersRes, projectsRes] = await Promise.all([
+    request.get(`/invoices/out?page=${outPage.value}&page_size=${pageSize.value}${pf}`),
+    request.get(`/invoices/in?page=${inPage.value}&page_size=${pageSize.value}${pf}`),
+    request.get(`/invoices/out?page=1&page_size=99999${pf.replace('&','?')}`),
+    request.get(`/invoices/in?page=1&page_size=99999${pf.replace('&','?')}`),
+    request.get('/partners'),
+    request.get('/projects'),
+  ])
+  outList.value = outRes.items || []
+  outTotal.value = outRes.total || 0
+  inList.value = inRes.items || []
+  inTotal.value = inRes.total || 0
+  allOutList.value = allOut.items || []
+  allInList.value = allIn.items || []
+  partners.value = partnersRes
+  projects.value = projectsRes
   partners.value.forEach(p => partnerMap.value[p.id] = p.name)
   projects.value.forEach(p => projMap.value[p.id] = p.name)
 }

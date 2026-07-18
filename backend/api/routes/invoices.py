@@ -35,19 +35,30 @@ async def create_invoice_out(
     return inv
 
 
-@router.get("/out", response_model=list[InvoiceOutResponse])
+@router.get("/out")
 async def list_invoice_out(
     request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_invoice),
+    page: int = 1,
+    page_size: int = 10,
 ):
+    page_size = min(page_size, 100)
     query = select(InvoiceOut)
+    count_q = select(func.count(InvoiceOut.id))
     if user.role != "super_admin" and user.tenant_id:
         query = query.where(InvoiceOut.tenant_id == user.tenant_id)
+        count_q = count_q.where(InvoiceOut.tenant_id == user.tenant_id)
     if project_id := request.query_params.get("project_id"):
         query = query.where(InvoiceOut.project_id == int(project_id))
-    result = await db.execute(query.order_by(InvoiceOut.id.desc()))
-    return result.scalars().all()
+        count_q = count_q.where(InvoiceOut.project_id == int(project_id))
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(
+        query.order_by(InvoiceOut.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return {"items": result.scalars().all(), "total": total, "page": page, "page_size": page_size}
 
 
 @router.put("/out/{invoice_id}", response_model=InvoiceOutResponse)
@@ -136,19 +147,30 @@ async def create_invoice_in(
     return inv
 
 
-@router.get("/in", response_model=list[InvoiceInResponse])
+@router.get("/in")
 async def list_invoice_in(
     request: Request,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_invoice),
+    page: int = 1,
+    page_size: int = 10,
 ):
+    page_size = min(page_size, 100)
     query = select(InvoiceIn)
+    count_q = select(func.count(InvoiceIn.id))
     if user.role != "super_admin" and user.tenant_id:
         query = query.where(InvoiceIn.tenant_id == user.tenant_id)
+        count_q = count_q.where(InvoiceIn.tenant_id == user.tenant_id)
     if project_id := request.query_params.get("project_id"):
         query = query.where(InvoiceIn.project_id == int(project_id))
-    result = await db.execute(query.order_by(InvoiceIn.id.desc()))
-    return result.scalars().all()
+        count_q = count_q.where(InvoiceIn.project_id == int(project_id))
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(
+        query.order_by(InvoiceIn.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return {"items": result.scalars().all(), "total": total, "page": page, "page_size": page_size}
 
 
 @router.put("/in/{invoice_id}", response_model=InvoiceInResponse)
