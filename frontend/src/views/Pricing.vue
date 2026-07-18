@@ -7,6 +7,7 @@
           <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
         </el-select>
         <el-button v-if="canWrite" type="primary" @click="openNew">新增计价</el-button>
+        <el-button @click="exportExcel">导出Excel</el-button>
       </div>
     </div>
     <el-card style="margin-bottom:12px">
@@ -131,6 +132,18 @@ async function save() {
 async function handleDelete(id) {
   await request.delete(`/pricing/${id}`)
   ElMessage.success('删除成功'); fetch()
+}
+
+async function downloadExcel(url, filename) {
+  const res = await request.get(url, { responseType: 'blob' })
+  const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename
+  a.click(); URL.revokeObjectURL(a.href)
+  ElMessage.success('导出成功')
+}
+async function exportExcel() {
+  const pf = filterProject.value ? `?project_id=${filterProject.value}` : ''
+  await downloadExcel(`/pricing/export${pf}`, `工程计价_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
 onMounted(fetch)

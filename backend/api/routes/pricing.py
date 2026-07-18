@@ -141,3 +141,66 @@ async def pricing_total(
         q = q.where(EngineeringPricing.project_id == project_id)
     total = (await db.execute(q)).scalar()
     return {"total": float(total)}
+
+
+@router.get("/export")
+async def export_pricing(
+    project_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """导出工程计价为 Excel"""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+
+    query = select(EngineeringPricing)
+    if user.role != "super_admin" and user.tenant_id:
+        query = query.where(EngineeringPricing.tenant_id == user.tenant_id)
+    if project_id:
+        query = query.where(EngineeringPricing.project_id == project_id)
+    result = await db.execute(query.order_by(EngineeringPricing.id.desc()))
+    items = result.scalars().all()
+
+    # Resolve project names
+    pids = {p.project_id for p in items}
+    projects_q = await db.execute(select(Project).where(Project.id.in_(list(pids) or [0])))
+    pname = {pp.id: pp.name for pp in projects_q.scalars().all()}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "工程计价"
+
+    h_font = Font(bold=True, size=11, color="FFFFFF")
+    h_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    h_align = Alignment(horizontal="center", vertical="center")
+    thin = Border(left=Side(style="thin"), right=Side(style="thin"),
+                  top=Side(style="thin"), bottom=Side(style="thin"))
+
+    headers = ["项目名称", "单项工程名称", "金额", "日期", "审核状态", "备注"]
+    for ci, h in enumerate(headers, 1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.font = h_font; c.fill = h_fill; c.alignment = h_align; c.border = thin
+
+    for ri, item in enumerate(items, 2):
+        vals = [
+            pname.get(item.project_id, ""),
+            item.item_name,
+            float(item.amount or 0),
+            str(item.pricing_date or ""),
+            "已审核" if item.is_approved else "待审核",
+            item.remark or "",
+        ]
+        for ci, v in enumerate(vals, 1):
+            c = ws.cell(row=ri, column=ci, value=v)
+            c.alignment = h_align; c.border = thin
+
+    for col in ws.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=8)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 30)
+
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": "attachment; filename=pricing.xlsx"})
