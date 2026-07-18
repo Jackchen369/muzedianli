@@ -120,6 +120,8 @@ class Project(Base, TimestampMixin, TenantMixin):
     contracts: Mapped[List["ContractFile"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     # 分包单位关系
     subcontractors: Mapped[List["ProjectSubcontractor"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    # 工程计价
+    pricing_items: Mapped[List["EngineeringPricing"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
 
 # ─── Project-Subcontractor (项目分包关联) ───────────────
@@ -216,6 +218,19 @@ class WorkHour(Base, TimestampMixin, TenantMixin):
     content: Mapped[Optional[str]] = mapped_column(Text, comment="工作内容")
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("sys_user.id"), nullable=True, comment="创建人")
+
+
+# ─── Engineering Pricing (工程计价) ──────────────────────────
+
+class EngineeringPricing(Base, TimestampMixin, TenantMixin):
+    __tablename__ = "biz_engineering_pricing"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_id: Mapped[int] = mapped_column(Integer, ForeignKey("biz_project.id"), comment="关联项目")
+    item_name: Mapped[str] = mapped_column(String(200), comment="单项工程名称")
+    amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="金额")
+    remark: Mapped[Optional[str]] = mapped_column(Text)
+    # 项目关系
+    project: Mapped["Project"] = relationship(back_populates="pricing_items")
 
 
 # ─── Salary (薪酬) ───────────────────────────────────────

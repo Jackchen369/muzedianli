@@ -189,6 +189,22 @@ class PaymentResponse(PaymentCreate):
     model_config = {"from_attributes": True}
 
 
+# ─── Engineering Pricing ─────────────────────────────
+
+class EngineeringPricingCreate(BaseModel):
+    project_id: int
+    item_name: str
+    amount: Optional[Decimal] = None
+    remark: Optional[str] = None
+
+class EngineeringPricingResponse(EngineeringPricingCreate):
+    id: int
+    tenant_id: int
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
 # ─── Dashboard ───────────────────────────────────────────
 
 class DashboardSummary(BaseModel):

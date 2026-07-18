@@ -19,6 +19,7 @@ const routes = [
     { path: 'archive', name: 'Archive', component: () => import('@/views/Archive.vue') },
     { path: 'reimbursement', name: 'Reimbursement', component: () => import('@/views/Reimbursement.vue') },
     { path: 'backup', name: 'Backup', component: () => import('@/views/Backup.vue') },
+    { path: 'pricing', name: 'Pricing', component: () => import('@/views/Pricing.vue') },
       { path: 'users', name: 'Users', component: () => import('@/views/Users.vue') },
     ]
   }

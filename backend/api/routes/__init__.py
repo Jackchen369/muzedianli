@@ -14,6 +14,7 @@ from .labour import router as labour_router
 from .archive import router as archive_router
 from .reimbursement import router as reimbursement_router
 from .backup import router as backup_router
+from .pricing import router as pricing_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -30,3 +31,4 @@ api_router.include_router(labour_router)
 api_router.include_router(archive_router)
 api_router.include_router(reimbursement_router)
 api_router.include_router(backup_router)
+api_router.include_router(pricing_router)
