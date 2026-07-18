@@ -11,7 +11,7 @@
         <el-menu-item v-if="isFinance" index="/taxes"><el-icon><Warning /></el-icon><span>税金管理</span></el-menu-item>
         <el-menu-item v-if="isFinance" index="/receipts"><el-icon><Document /></el-icon><span>电子收据</span></el-menu-item>
         <el-menu-item v-if="isLabour" index="/labour"><el-icon><UserFilled /></el-icon><span>人员工时</span></el-menu-item>
-        <el-menu-item v-if="isProject" index="/pricing"><el-icon><Money /></el-icon><span>工程计价</span></el-menu-item>
+        <el-menu-item v-if="isAdmin || isProject || isAttendance" index="/pricing"><el-icon><Money /></el-icon><span>工程计价</span></el-menu-item>
         <el-menu-item index="/archive"><el-icon><FolderOpened /></el-icon><span>电子档案</span></el-menu-item>
         <el-menu-item index="/reimbursement"><el-icon><Money /></el-icon><span>报销管理</span></el-menu-item>
         <el-menu-item v-if="isAdmin" index="/users"><el-icon><User /></el-icon><span>用户管理</span></el-menu-item>

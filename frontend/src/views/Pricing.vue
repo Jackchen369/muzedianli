@@ -6,7 +6,7 @@
         <el-select v-model="filterProject" clearable placeholder="筛选项目" style="width:200px;margin-right:8px" @change="fetch">
           <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
         </el-select>
-        <el-button type="primary" @click="openNew">新增计价</el-button>
+        <el-button v-if="canWrite" type="primary" @click="openNew">新增计价</el-button>
       </div>
     </div>
     <el-card style="margin-bottom:12px">
@@ -23,11 +23,17 @@
       <el-table-column label="日期" min-width="100" align="center">
         <template #default="{row}">{{ row.pricing_date || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="remark" label="备注" min-width="150" align="center" />
-      <el-table-column label="操作" min-width="120" align="center">
+      <el-table-column label="审核" min-width="80" align="center">
         <template #default="{row}">
-          <el-button text type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-          <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
+          <el-tag :type="row.is_approved?'success':'warning'" size="small">{{ row.is_approved?'已审核':'待审核' }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="remark" label="备注" min-width="150" align="center" />
+      <el-table-column label="操作" min-width="150" align="center">
+        <template #default="{row}">
+          <el-button v-if="isAdmin && !row.is_approved" text type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="isAdmin" text :type="row.is_approved?'success':'warning'" size="small" @click="toggleApprove(row)">{{ row.is_approved?'取消审核':'审核' }}</el-button>
+          <el-popconfirm v-if="isAdmin && !row.is_approved" title="确定删除？" @confirm="handleDelete(row.id)">
             <template #reference><el-button text type="danger" size="small">删除</el-button></template>
           </el-popconfirm>
         </template>
@@ -54,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/api/request'
 
@@ -69,6 +75,15 @@ const editId = ref(null)
 const page = ref(1)
 const total = ref(0)
 const pageSize = ref(10)
+
+const currentUser = computed(() => {
+  try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
+})
+const role = computed(() => currentUser.value?.role || '')
+const isAdmin = computed(() => role.value === 'super_admin' || role.value === 'company_admin')
+const isAttendance = computed(() => role.value === 'attendance')
+const canWrite = computed(() => isAdmin.value || isAttendance.value)
+
 const form = reactive({ project_id: null, item_name: '', amount: 0, pricing_date: null, remark: '' })
 
 async function fetch() {
@@ -76,7 +91,6 @@ async function fetch() {
   const res = await request.get(`/pricing?page=${page.value}&page_size=${pageSize.value}${pf}`)
   list.value = res.items || []
   total.value = res.total || 0
-  // total amount from all data (unpaginated)
   const t = await request.get('/pricing/total' + '?' + (filterProject.value ? `project_id=${filterProject.value}` : ''))
   totalAmount.value = t.total || 0
   projects.value = await request.get('/projects')
@@ -93,6 +107,12 @@ function openEdit(row) {
   isEdit.value = true; editId.value = row.id
   Object.assign(form, { project_id: row.project_id, item_name: row.item_name, amount: row.amount || 0, pricing_date: row.pricing_date || null, remark: row.remark || '' })
   showDialog.value = true
+}
+
+async function toggleApprove(row) {
+  await request.put(`/pricing/${row.id}/approve`)
+  ElMessage.success(row.is_approved ? '已取消审核' : '审核通过')
+  fetch()
 }
 
 async function save() {

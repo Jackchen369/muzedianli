@@ -201,6 +201,7 @@ class EngineeringPricingCreate(BaseModel):
 class EngineeringPricingResponse(EngineeringPricingCreate):
     id: int
     tenant_id: int
+    is_approved: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
