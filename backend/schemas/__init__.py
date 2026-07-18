@@ -195,6 +195,7 @@ class EngineeringPricingCreate(BaseModel):
     project_id: int
     item_name: str
     amount: Optional[Decimal] = None
+    pricing_date: Optional[date] = None
     remark: Optional[str] = None
 
 class EngineeringPricingResponse(EngineeringPricingCreate):

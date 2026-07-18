@@ -20,6 +20,9 @@
       <el-table-column label="金额" min-width="120" align="center">
         <template #default="{row}">¥{{ (row.amount||0).toLocaleString() }}</template>
       </el-table-column>
+      <el-table-column label="日期" min-width="100" align="center">
+        <template #default="{row}">{{ row.pricing_date || '-' }}</template>
+      </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="150" align="center" />
       <el-table-column label="操作" min-width="120" align="center">
         <template #default="{row}">
@@ -37,6 +40,7 @@
         <el-form-item label="工程名称"><el-input v-model="form.item_name" /></el-form-item>
         <el-row :gutter="16">
           <el-col :span="12"><el-form-item label="金额"><el-input-number v-model="form.amount" :min="0" :step="10000" style="width:100%" /></el-form-item></el-col>
+          <el-col :span="12"><el-form-item label="日期"><el-date-picker v-model="form.pricing_date" type="date" style="width:100%" value-format="YYYY-MM-DD" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
       </el-form>
@@ -61,7 +65,7 @@ const totalAmount = ref(0)
 const showDialog = ref(false)
 const isEdit = ref(false)
 const editId = ref(null)
-const form = reactive({ project_id: null, item_name: '', amount: 0, remark: '' })
+const form = reactive({ project_id: null, item_name: '', amount: 0, pricing_date: null, remark: '' })
 
 async function fetch() {
   const pf = filterProject.value ? `?project_id=${filterProject.value}` : ''
@@ -74,13 +78,13 @@ async function fetch() {
 
 function openNew() {
   isEdit.value = false; editId.value = null
-  Object.assign(form, { project_id: null, item_name: '', amount: 0, remark: '' })
+  Object.assign(form, { project_id: null, item_name: '', amount: 0, pricing_date: null, remark: '' })
   showDialog.value = true
 }
 
 function openEdit(row) {
   isEdit.value = true; editId.value = row.id
-  Object.assign(form, { project_id: row.project_id, item_name: row.item_name, amount: row.amount || 0, remark: row.remark || '' })
+  Object.assign(form, { project_id: row.project_id, item_name: row.item_name, amount: row.amount || 0, pricing_date: row.pricing_date || null, remark: row.remark || '' })
   showDialog.value = true
 }
 
