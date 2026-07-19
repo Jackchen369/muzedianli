@@ -13,7 +13,7 @@
     <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:18px;font-weight:bold">发票管理</span>
       <div style="display:flex;gap:8px">
-        <el-input v-model="searchText" placeholder="搜索发票号码" clearable style="width:180px" @input="fetch" />
+        <el-input v-model="searchText" placeholder="搜索项目名称" clearable style="width:180px" @input="fetch" />
         <el-button type="primary" @click="openNew(tab)">新增{{ tab==='out'?'销项':'进项' }}发票</el-button>
       </div>
     </div>

@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user, require_invoice
-from models import InvoiceOut, InvoiceIn, AuditLog, User
+from models import InvoiceOut, InvoiceIn, AuditLog, User, Project
 from schemas import InvoiceOutCreate, InvoiceOutResponse, InvoiceInCreate, InvoiceInResponse
 
 router = APIRouter(prefix="/invoices", tags=["发票管理"])
@@ -54,12 +54,10 @@ async def list_invoice_out(
         query = query.where(InvoiceOut.project_id == int(project_id))
         count_q = count_q.where(InvoiceOut.project_id == int(project_id))
     if search:
-        query = query.where(
-            InvoiceOut.invoice_no.ilike(f"%{search}%")
-        )
-        count_q = count_q.where(
-            InvoiceOut.invoice_no.ilike(f"%{search}%")
-        )
+        # Search by project name
+        subq = select(Project.id).where(Project.name.ilike(f"%{search}%")).scalar_subquery()
+        query = query.where(InvoiceOut.project_id.in_(subq))
+        count_q = count_q.where(InvoiceOut.project_id.in_(subq))
     total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(InvoiceOut.id.desc())
@@ -174,12 +172,10 @@ async def list_invoice_in(
         query = query.where(InvoiceIn.project_id == int(project_id))
         count_q = count_q.where(InvoiceIn.project_id == int(project_id))
     if search:
-        query = query.where(
-            InvoiceIn.invoice_no.ilike(f"%{search}%")
-        )
-        count_q = count_q.where(
-            InvoiceIn.invoice_no.ilike(f"%{search}%")
-        )
+        # Search by project name
+        subq = select(Project.id).where(Project.name.ilike(f"%{search}%")).scalar_subquery()
+        query = query.where(InvoiceIn.project_id.in_(subq))
+        count_q = count_q.where(InvoiceIn.project_id.in_(subq))
     total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(InvoiceIn.id.desc())
