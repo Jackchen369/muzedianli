@@ -159,10 +159,6 @@ const form = reactive({
   is_deductible:true, actual_tax_received:0, remark:'', file_path:''
 })
 
-const token = computed(() => localStorage.getItem('token') || '')
-const uploadUrl = computed(() => `/api/v1/files/upload/0?filetype=invoice`)
-const uploadHeaders = computed(() => ({ Authorization: `Bearer ${token.value}` }))
-
 const calcExcluding = computed(() => {
   if (!form.amount || !form.tax_rate) return '0.00'
   const rate = form.tax_rate
