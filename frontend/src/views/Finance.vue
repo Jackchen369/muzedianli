@@ -73,7 +73,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="凭证附件">
-          <el-upload :action="uploadUrl" :headers="uploadHeaders" :on-success="upSuccess" :on-error="upError" :show-file-list="false">
+          <el-upload :http-request="customUpload" :on-success="upSuccess" :on-error="upError" :show-file-list="false">
             <el-button size="small" type="primary">上传回单/凭证</el-button>
             <template #tip><span style="font-size:12px;color:#909399;margin-left:8px">{{ form.file_path ? '已上传' : '未上传' }}</span></template>
           </el-upload>
@@ -157,6 +157,17 @@ function editPay(row) {
 
 function upSuccess(r) { form.file_path = r.filepath; ElMessage.success('上传成功') }
 function upError() { ElMessage.error('上传失败') }
+
+async function customUpload(options) {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  try {
+    const res = await request.post('/files/upload/0?filetype=receipt', formData)
+    options.onSuccess(res)
+  } catch (e) {
+    options.onError(e)
+  }
+}
 
 async function save() {
   const isRec = tab.value === 'receipt'
