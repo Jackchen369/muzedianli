@@ -47,8 +47,8 @@ async def upload_file(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    # Seals & invoices: 只存文件，不写 DB（由调用方管理）
-    if filetype in ("seal", "invoice"):
+    # Seals, invoices & receipts: 只存文件，不写 DB（由调用方管理）
+    if filetype in ("seal", "invoice", "receipt"):
         return {"filename": file.filename, "filepath": unique_name, "filesize": len(content)}
 
     # DB record
