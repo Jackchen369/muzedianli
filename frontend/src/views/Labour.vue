@@ -250,7 +250,7 @@ function calcSalary() {} // triggers computed refresh
 
 async function fetch() {
   [staffList.value, projects.value] = await Promise.all([
-    request.get('/labour/staff'), request.get('/projects').catch(() => [])
+    request.get('/labour/staff'), request.get('/projects').then(r => r.items || r || []).catch(() => [])
   ])
   staffList.value.forEach(s => staffMap.value[s.id] = s.name)
   projects.value.forEach(p => projMap.value[p.id] = p.name)

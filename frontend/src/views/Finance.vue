@@ -129,7 +129,7 @@ async function fetch() {
     request.get('/finance/receipts'),
     request.get('/finance/payments'),
     request.get('/partners'),
-    request.get('/projects'),
+    request.get('/projects').then(r => r.items || r || []),
   ])
   summary.value = s; receipts.value = r; payments.value = p2
   partners.value = partners2; projects.value = projects2

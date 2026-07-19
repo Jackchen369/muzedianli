@@ -124,7 +124,8 @@ async function fetch() {
   const lt = await request.get(`/pricing/total?category=带电作业${pf.replace('&','?') || ''}`)
   totalLive.value = lt.total || 0
 
-  projects.value = await request.get('/projects')
+  const pr = await request.get('/projects?page=1&page_size=999')
+  projects.value = pr.items || []
   projects.value.forEach(p => projMap.value[p.id] = p.name)
 }
 

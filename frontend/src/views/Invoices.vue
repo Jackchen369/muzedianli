@@ -217,7 +217,7 @@ async function fetch() {
     request.get(`/invoices/out?page=1&page_size=99999${pf.replace('&','?')}`),
     request.get(`/invoices/in?page=1&page_size=99999${pf.replace('&','?')}`),
     request.get('/partners'),
-    request.get('/projects'),
+    request.get('/projects').then(r => r.items || r || []),
   ])
   outList.value = outRes.items || []
   outTotal.value = outRes.total || 0
