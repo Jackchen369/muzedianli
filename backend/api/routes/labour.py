@@ -542,11 +542,11 @@ async def export_work_hours(db: AsyncSession = Depends(get_db), user: User = Dep
         for s in (await db.execute(select(Staff).where(Staff.id.in_(sids)))).scalars(): sm[s.id] = s.name
     if pids:
         for p in (await db.execute(select(Project).where(Project.id.in_(pids)))).scalars(): pm[p.id] = p.name
-    headers = ["人员","项目","日期","临时职务","出工补助","饭补","高温补贴","天气补贴","日合计","审核状态"]
+    headers = ["人员","项目","日期","临时职务","出工补助","饭补","高温补贴","天气补贴","日合计","审核状态","备注"]
     rows = [[sm.get(w.staff_id,""),pm.get(w.project_id,""),str(w.work_date),
              w.position_title or "",float(w.attendance_subsidy or 0),float(w.meal_allowance or 0),
              float(w.heat_subsidy or 0),float(w.weather_subsidy or 0),float(w.daily_total or 0),
-             "通过" if w.is_approved else "待审"] for w in wh_list]
+             "通过" if w.is_approved else "待审", w.content or ""] for w in wh_list]
     return _build_excel(headers, rows)
 
 
