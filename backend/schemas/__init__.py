@@ -166,6 +166,7 @@ class ReceiptCreate(BaseModel):
     amount: Decimal
     receipt_date: date
     receipt_type: str = "银行转账"
+    file_path: Optional[str] = None
 
 class ReceiptResponse(ReceiptCreate):
     id: int
@@ -180,6 +181,7 @@ class PaymentCreate(BaseModel):
     amount: Decimal
     payment_date: date
     payment_type: str = "对公付款"
+    file_path: Optional[str] = None
 
 class PaymentResponse(PaymentCreate):
     id: int
