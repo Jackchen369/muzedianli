@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_user, require_project
+from core.security import get_current_user, require_project, require_basic
 from models import Project, Partner, AuditLog, User
 from schemas import ProjectCreate, ProjectResponse
 
@@ -43,7 +43,7 @@ async def create_project(
 @router.get("")
 async def list_projects(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_project),
+    user: User = Depends(require_basic),
     search: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
