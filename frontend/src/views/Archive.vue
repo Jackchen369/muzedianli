@@ -44,10 +44,16 @@
         <template #default="{row}">{{ row.is_directory ? '文件夹' : (row.file_type || '-') }}</template>
       </el-table-column>
       <el-table-column prop="created_at" label="创建时间" width="170" />
-      <el-table-column label="操作" width="130" fixed="right">
+      <el-table-column label="审核" width="70" align="center">
+        <template #default="{row}">
+          <el-tag :type="row.is_approved?'success':'warning'" size="small">{{ row.is_approved?'已审':'待审' }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{row}">
           <el-button v-if="!row.is_directory" text type="primary" size="small" @click="downloadFile(row)">下载</el-button>
-          <el-popconfirm :title="`确定删除${row.is_directory?'此目录及所有子文件': '此文件'}？`" @confirm="delEntry(row.id)">
+          <el-button v-if="isAdmin" text :type="row.is_approved?'success':'warning'" size="small" @click="toggleApprove(row)">{{ row.is_approved?'取消审核':'审核' }}</el-button>
+          <el-popconfirm v-if="!row.is_approved" :title="`确定删除${row.is_directory?'此目录及所有子文件': '此文件'}？`" @confirm="delEntry(row.id)">
             <template #reference><el-button text type="danger" size="small">删除</el-button></template>
           </el-popconfirm>
         </template>
@@ -103,6 +109,10 @@ const searchText = ref('')
 const archiveList = ref([])
 const showNewFolder = ref(false)
 const folderName = ref('')
+
+const currentUser = computed(() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })
+const role = computed(() => currentUser.value?.role || '')
+const isAdmin = computed(() => role.value === 'super_admin' || role.value === 'company_admin')
 
 // Preview state
 const showPreview = ref(false)
@@ -247,7 +257,13 @@ async function delEntry(id) {
     await request.delete(`/archive/${id}`)
     ElMessage.success('已删除')
     fetchList()
-  } catch { ElMessage.error('删除失败') }
+  } catch (e) { ElMessage.error(e?.detail || '删除失败') }
+}
+
+async function toggleApprove(row) {
+  await request.put(`/archive/${row.id}/approve`)
+  ElMessage.success(row.is_approved ? '已取消审核' : '审核通过')
+  fetchList()
 }
 
 onMounted(fetchList)

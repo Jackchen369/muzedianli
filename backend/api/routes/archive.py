@@ -8,13 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File,
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_admin, get_current_user, require_basic
+from core.security import get_current_admin, get_current_user
 from models import ElectronicArchive, User
 
 router = APIRouter(prefix="/archive", tags=["电子档案"])
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads", "archive")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+def _is_admin(user: User) -> bool:
+    return user.role in ("super_admin", "company_admin")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -26,10 +30,9 @@ async def create_directory(
     name: str = Form(...),
     directory: str = Form("/"),
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
-    """创建目录"""
-    # 检查同一目录下是否已存在同名目录
+    """创建目录 — 所有角色"""
     existing = await db.execute(
         select(ElectronicArchive).where(
             ElectronicArchive.directory == directory,
@@ -41,7 +44,7 @@ async def create_directory(
         raise HTTPException(status_code=400, detail="目录已存在")
 
     entry = ElectronicArchive(
-        tenant_id=admin.tenant_id or 1,
+        tenant_id=user.tenant_id or 1,
         name=name,
         directory=directory,
         is_directory=True,
@@ -61,21 +64,19 @@ async def upload_file(
     file: UploadFile = File(...),
     directory: str = Form("/"),
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
-    """上传文件（无大小限制）"""
-    # 生成唯一文件名
+    """上传文件 — 所有角色"""
     ext = os.path.splitext(file.filename or "file")[1]
     stored_name = f"{uuid.uuid4().hex}{ext}"
     file_path = os.path.join(UPLOAD_DIR, stored_name)
 
-    # 写入文件
     content = await file.read()
     with open(file_path, "wb") as f:
         f.write(content)
 
     entry = ElectronicArchive(
-        tenant_id=admin.tenant_id or 1,
+        tenant_id=user.tenant_id or 1,
         name=file.filename or stored_name,
         directory=directory,
         is_directory=False,
@@ -99,9 +100,9 @@ async def list_archive(
     directory: str = "/",
     search: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_basic),
+    user: User = Depends(get_current_user),
 ):
-    """列出目录下文件/子目录，支持搜索名称"""
+    """列出目录下文件/子目录"""
     query = select(ElectronicArchive).where(
         ElectronicArchive.directory == directory
     )
@@ -109,7 +110,6 @@ async def list_archive(
     if search:
         query = query.where(ElectronicArchive.name.ilike(f"%{search}%"))
 
-    # 同时搜索所有目录（全局搜索）时忽略 directory 过滤
     if search:
         query = select(ElectronicArchive).where(
             ElectronicArchive.name.ilike(f"%{search}%")
@@ -119,7 +119,6 @@ async def list_archive(
     result = await db.execute(query)
     entries = result.scalars().all()
 
-    # 转换为字典，添加友好大小
     data = []
     for e in entries:
         d = {
@@ -130,6 +129,7 @@ async def list_archive(
             "file_type": e.file_type,
             "file_size": e.file_size,
             "file_size_display": format_size(e.file_size) if e.file_size else "",
+            "is_approved": e.is_approved,
             "created_at": str(e.created_at)[:19] if e.created_at else "",
         }
         data.append(d)
@@ -139,9 +139,9 @@ async def list_archive(
 @router.get("/all-directories")
 async def list_all_directories(
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_basic),
+    user: User = Depends(get_current_user),
 ):
-    """获取所有目录列表（用于面包屑导航）"""
+    """获取所有目录列表"""
     result = await db.execute(
         select(ElectronicArchive).where(
             ElectronicArchive.is_directory == True
@@ -155,16 +155,16 @@ async def list_all_directories(
 
 
 # ═══════════════════════════════════════════════════════════
-#  Download
+#  Download & Preview
 # ═══════════════════════════════════════════════════════════
 
 @router.get("/download/{entry_id}")
 async def download_file(
     entry_id: int,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(require_basic),
+    user: User = Depends(get_current_user),
 ):
-    """下载文件"""
+    """下载文件 — 所有角色"""
     result = await db.execute(select(ElectronicArchive).where(ElectronicArchive.id == entry_id))
     entry = result.scalar_one_or_none()
     if not entry:
@@ -184,10 +184,6 @@ async def download_file(
     )
 
 
-# ═══════════════════════════════════════════════════════════
-#  Preview (inline)
-# ═══════════════════════════════════════════════════════════
-
 @router.get("/preview/{entry_id}")
 async def preview_file(
     entry_id: int,
@@ -195,10 +191,7 @@ async def preview_file(
     authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """预览文件（inline，适用于图片/PDF等浏览器可渲染格式）。
-    同时支持 Authorization header 和 ?token= 查询参数。
-    """
-    # 双通道认证：header 优先，query param 兜底
+    """预览文件 — 所有角色"""
     access_token = None
     if authorization:
         parts = authorization.split()
@@ -209,12 +202,9 @@ async def preview_file(
     if not access_token:
         raise HTTPException(status_code=401, detail="未提供认证凭据")
 
-    # 验证 token
     try:
-        from jose import jwt, JWTError
+        from jose import jwt
         from core.config import settings
-        # Import settings at function scope to avoid reload issues
-        _ = settings.SECRET_KEY
         payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = int(payload.get("sub") or 0)
     except Exception:
@@ -250,6 +240,29 @@ async def preview_file(
 
 
 # ═══════════════════════════════════════════════════════════
+#  Approve
+# ═══════════════════════════════════════════════════════════
+
+@router.put("/{entry_id}/approve")
+async def approve_entry(
+    entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """审核通过/取消审核 — 仅管理员"""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="权限不足")
+    result = await db.execute(select(ElectronicArchive).where(ElectronicArchive.id == entry_id))
+    entry = result.scalar_one_or_none()
+    if not entry:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    entry.is_approved = not entry.is_approved
+    await db.flush()
+    await db.refresh(entry)
+    return entry
+
+
+# ═══════════════════════════════════════════════════════════
 #  Delete
 # ═══════════════════════════════════════════════════════════
 
@@ -257,16 +270,18 @@ async def preview_file(
 async def delete_entry(
     entry_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_current_admin),
+    user: User = Depends(get_current_user),
 ):
-    """删除文件或目录（目录会递归删除子项）"""
+    """删除文件或目录 — 已审核的不可删除"""
     result = await db.execute(select(ElectronicArchive).where(ElectronicArchive.id == entry_id))
     entry = result.scalar_one_or_none()
     if not entry:
         raise HTTPException(status_code=404, detail="记录不存在")
 
+    if entry.is_approved:
+        raise HTTPException(status_code=403, detail="已审核的记录不可删除")
+
     if entry.is_directory:
-        # 删除该目录下所有子文件和子目录
         prefix = f"{entry.directory}{entry.name}/"
         sub = await db.execute(
             select(ElectronicArchive).where(
@@ -274,13 +289,14 @@ async def delete_entry(
             )
         )
         for s in sub.scalars():
+            if s.is_approved:
+                raise HTTPException(status_code=403, detail=f"子文件 '{s.name}' 已审核，无法删除此目录")
             if not s.is_directory and s.file_path:
                 fp = os.path.join(UPLOAD_DIR, s.file_path)
                 if os.path.exists(fp):
                     os.remove(fp)
             await db.delete(s)
     else:
-        # 删除物理文件
         if entry.file_path:
             fp = os.path.join(UPLOAD_DIR, entry.file_path)
             if os.path.exists(fp):

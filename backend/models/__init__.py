@@ -417,6 +417,7 @@ class ElectronicArchive(Base, TimestampMixin, TenantMixin):
     file_size: Mapped[Optional[int]] = mapped_column(Integer, comment="文件大小(字节)")
     file_path: Mapped[Optional[str]] = mapped_column(String(500), comment="存储路径")
     original_filename: Mapped[Optional[str]] = mapped_column(String(255), comment="原始文件名")
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=False, comment="审核状态")
 
 
 # ─── Reimbursement (报销) ─────────────────────────────
