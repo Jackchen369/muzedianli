@@ -213,8 +213,8 @@ async function fetch() {
   const [outRes, inRes, allOut, allIn, partnersRes, projectsRes] = await Promise.all([
     request.get(`/invoices/out?page=${outPage.value}&page_size=${pageSize.value}${st}`),
     request.get(`/invoices/in?page=${inPage.value}&page_size=${pageSize.value}${st}`),
-    request.get(`/invoices/out?page=1&page_size=99999${st.replace('&','?')}`),
-    request.get(`/invoices/in?page=1&page_size=99999${st.replace('&','?')}`),
+    request.get(`/invoices/out?page=1&page_size=99999${st}`),
+    request.get(`/invoices/in?page=1&page_size=99999${st}`),
     request.get('/partners'),
     request.get('/projects?page=1&page_size=999').then(r => r.items || r || []),
   ])
