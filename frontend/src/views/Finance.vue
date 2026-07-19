@@ -176,7 +176,7 @@ async function save() {
   } catch (e) { ElMessage.error(e?.detail || '保存失败') }
 }
 
-function viewFile(row) { if (row.file_path) window.open(`/api/v1/files/download/by-path?path=${row.file_path}`, '_blank') }
+function viewFile(row) { if (row.file_path) window.open(`/api/v1/files/by-filename/${row.file_path}`, '_blank') }
 async function delRec(id) { await request.delete(`/finance/receipts/${id}`); ElMessage.success('已删除'); fetch() }
 async function delPay(id) { await request.delete(`/finance/payments/${id}`); ElMessage.success('已删除'); fetch() }
 
