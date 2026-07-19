@@ -115,7 +115,7 @@
           <el-col :span="12"><el-form-item label="开票日期"><el-date-picker v-model="form.invoice_date" type="date" style="width:100%" value-format="YYYY-MM-DD" /></el-form-item></el-col>
         </el-row>
         <el-form-item label="发票附件">
-          <el-upload :action="uploadUrl" :headers="uploadHeaders" :on-success="upSuccess" :on-error="upError" :show-file-list="false">
+          <el-upload :http-request="customUpload" :on-success="upSuccess" :on-error="upError" :show-file-list="false">
             <el-button size="small" type="primary">上传发票扫描件</el-button>
             <template #tip><span style="font-size:12px;color:#909399;margin-left:8px">{{ form.file_path ? '已上传' : '未上传' }}</span></template>
           </el-upload>
@@ -250,6 +250,17 @@ function editIn(row) {
 
 function upSuccess(r) { uploadFilePath.value = r.filepath; form.file_path = r.filepath; ElMessage.success('上传成功') }
 function upError() { ElMessage.error('上传失败') }
+
+async function customUpload(options) {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  try {
+    const res = await request.post('/files/upload/0?filetype=invoice', formData)
+    options.onSuccess(res)
+  } catch (e) {
+    options.onError(e)
+  }
+}
 
 async function saveInvoice() {
   const isOut = tab.value === 'out'
