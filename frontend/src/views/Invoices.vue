@@ -13,9 +13,7 @@
     <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:18px;font-weight:bold">发票管理</span>
       <div style="display:flex;gap:8px">
-        <el-select v-model="filterProject" clearable placeholder="项目" style="width:140px" @change="fetch">
-          <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
-        </el-select>
+        <el-input v-model="searchText" placeholder="搜索发票号码" clearable style="width:180px" @input="fetch" />
         <el-button type="primary" @click="openNew(tab)">新增{{ tab==='out'?'销项':'进项' }}发票</el-button>
       </div>
     </div>
@@ -150,6 +148,7 @@ const outTotal = ref(0)
 const inPage = ref(1)
 const inTotal = ref(0)
 const pageSize = ref(10)
+const searchText = ref('')
 // All data for stats computation (unpaginated)
 const allOutList = ref([])
 const allInList = ref([])
@@ -210,12 +209,12 @@ const stats = computed(() => {
 })
 
 async function fetch() {
-  const pf = filterProject.value ? `&project_id=${filterProject.value}` : ''
+  const st = searchText.value ? `&search=${encodeURIComponent(searchText.value)}` : ''
   const [outRes, inRes, allOut, allIn, partnersRes, projectsRes] = await Promise.all([
-    request.get(`/invoices/out?page=${outPage.value}&page_size=${pageSize.value}${pf}`),
-    request.get(`/invoices/in?page=${inPage.value}&page_size=${pageSize.value}${pf}`),
-    request.get(`/invoices/out?page=1&page_size=99999${pf.replace('&','?')}`),
-    request.get(`/invoices/in?page=1&page_size=99999${pf.replace('&','?')}`),
+    request.get(`/invoices/out?page=${outPage.value}&page_size=${pageSize.value}${st}`),
+    request.get(`/invoices/in?page=${inPage.value}&page_size=${pageSize.value}${st}`),
+    request.get(`/invoices/out?page=1&page_size=99999${st.replace('&','?')}`),
+    request.get(`/invoices/in?page=1&page_size=99999${st.replace('&','?')}`),
     request.get('/partners'),
     request.get('/projects?page=1&page_size=999').then(r => r.items || r || []),
   ])

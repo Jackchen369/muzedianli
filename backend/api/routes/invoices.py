@@ -42,6 +42,7 @@ async def list_invoice_out(
     user: User = Depends(require_invoice),
     page: int = 1,
     page_size: int = 10,
+    search: Optional[str] = None,
 ):
     page_size = min(page_size, 100)
     query = select(InvoiceOut)
@@ -52,6 +53,13 @@ async def list_invoice_out(
     if project_id := request.query_params.get("project_id"):
         query = query.where(InvoiceOut.project_id == int(project_id))
         count_q = count_q.where(InvoiceOut.project_id == int(project_id))
+    if search:
+        query = query.where(
+            InvoiceOut.invoice_no.ilike(f"%{search}%")
+        )
+        count_q = count_q.where(
+            InvoiceOut.invoice_no.ilike(f"%{search}%")
+        )
     total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(InvoiceOut.id.desc())
@@ -154,6 +162,7 @@ async def list_invoice_in(
     user: User = Depends(require_invoice),
     page: int = 1,
     page_size: int = 10,
+    search: Optional[str] = None,
 ):
     page_size = min(page_size, 100)
     query = select(InvoiceIn)
@@ -164,6 +173,13 @@ async def list_invoice_in(
     if project_id := request.query_params.get("project_id"):
         query = query.where(InvoiceIn.project_id == int(project_id))
         count_q = count_q.where(InvoiceIn.project_id == int(project_id))
+    if search:
+        query = query.where(
+            InvoiceIn.invoice_no.ilike(f"%{search}%")
+        )
+        count_q = count_q.where(
+            InvoiceIn.invoice_no.ilike(f"%{search}%")
+        )
     total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(InvoiceIn.id.desc())
