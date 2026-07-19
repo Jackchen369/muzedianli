@@ -41,6 +41,7 @@ async def create_pricing(
 @router.get("")
 async def list_pricing(
     project_id: Optional[int] = None,
+    category: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     page: int = 1,
@@ -56,6 +57,9 @@ async def list_pricing(
     if project_id:
         query = query.where(EngineeringPricing.project_id == project_id)
         count_q = count_q.where(EngineeringPricing.project_id == project_id)
+    if category:
+        query = query.where(EngineeringPricing.category == category)
+        count_q = count_q.where(EngineeringPricing.category == category)
     total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(EngineeringPricing.id.desc())
@@ -130,6 +134,7 @@ async def approve_pricing(
 @router.get("/total")
 async def pricing_total(
     project_id: Optional[int] = None,
+    category: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -139,6 +144,8 @@ async def pricing_total(
         q = q.where(EngineeringPricing.tenant_id == user.tenant_id)
     if project_id:
         q = q.where(EngineeringPricing.project_id == project_id)
+    if category:
+        q = q.where(EngineeringPricing.category == category)
     total = (await db.execute(q)).scalar()
     return {"total": float(total)}
 
@@ -146,6 +153,7 @@ async def pricing_total(
 @router.get("/export")
 async def export_pricing(
     project_id: Optional[int] = None,
+    category: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -160,6 +168,8 @@ async def export_pricing(
         query = query.where(EngineeringPricing.tenant_id == user.tenant_id)
     if project_id:
         query = query.where(EngineeringPricing.project_id == project_id)
+    if category:
+        query = query.where(EngineeringPricing.category == category)
     result = await db.execute(query.order_by(EngineeringPricing.id.desc()))
     items = result.scalars().all()
 

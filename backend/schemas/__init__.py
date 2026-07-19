@@ -196,6 +196,7 @@ class EngineeringPricingCreate(BaseModel):
     item_name: str
     amount: Optional[Decimal] = None
     pricing_date: Optional[date] = None
+    category: str = "主体业务"
     remark: Optional[str] = None
 
 class EngineeringPricingResponse(EngineeringPricingCreate):

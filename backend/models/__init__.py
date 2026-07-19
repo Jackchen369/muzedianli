@@ -229,6 +229,7 @@ class EngineeringPricing(Base, TimestampMixin, TenantMixin):
     item_name: Mapped[str] = mapped_column(String(200), comment="单项工程名称")
     amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), comment="金额")
     pricing_date: Mapped[Optional[date]] = mapped_column(Date, comment="计价日期")
+    category: Mapped[str] = mapped_column(String(20), default="主体业务", comment="板块: 主体业务/带电作业")
     remark: Mapped[Optional[str]] = mapped_column(Text)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, comment="审核状态")
     # 项目关系
