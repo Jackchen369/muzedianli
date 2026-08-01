@@ -34,11 +34,21 @@
       <!-- 工时记录 -->
       <el-tab-pane label="工时记录" name="hours">
         <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <el-select v-model="hourFilterStaff" clearable placeholder="人员" style="width:140px" @change="fetch">
+          <el-select v-model="hourFilterStaff" clearable placeholder="人员" style="width:140px" @change="fetchHours">
             <el-option v-for="s in staffList" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
+          <el-date-picker v-model="hourFilterMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width:130px" clearable @change="fetchHours" />
           <el-button v-if="isAdmin || isAttendance" type="primary" @click="openHour">添加工时</el-button>
-          <el-button @click="exportHours">导出Excel</el-button>
+          <el-dropdown trigger="click" @command="exportHours">
+            <el-button>导出Excel<el-icon style="margin-left:4px"><ArrowDown /></el-icon></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="all">全部导出</el-dropdown-item>
+                <el-dropdown-item command="month">按月份导出</el-dropdown-item>
+                <el-dropdown-item command="staff">按姓名导出</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
         <el-table :data="paginatedHours" stripe border size="small">
           <el-table-column label="人员" min-width="70"><template #default="{row}">{{ staffMap[row.staff_id] }}</template></el-table-column>
@@ -179,7 +189,7 @@
 <script setup>
 import { ref, onMounted, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, ArrowDown } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
 const tab = ref('staff')
@@ -191,6 +201,7 @@ const staffMap = ref({})
 const projMap = ref({})
 const staffSearch = ref('')
 const hourFilterStaff = ref('')
+const hourFilterMonth = ref('')
 const salaryFilterStaff = ref('')
 
 // Pagination
@@ -256,18 +267,23 @@ async function fetch() {
   projects.value.forEach(p => projMap.value[p.id] = p.name)
 
   if (tab.value === 'hours') {
-    let url = '/labour/work-hours'
-    const params = []
-    if (hourFilterStaff.value) params.push(`staff_id=${hourFilterStaff.value}`)
-    if (params.length) url += '?' + params.join('&')
-    hourList.value = await request.get(url)
-    hourPage.value = 1
+    await fetchHours()
   }
   if (tab.value === 'salary') {
     salaryList.value = await request.get('/labour/salary')
     salaryPage.value = 1
   }
   staffPage.value = 1
+}
+
+async function fetchHours() {
+  let url = '/labour/work-hours'
+  const params = []
+  if (hourFilterStaff.value) params.push(`staff_id=${hourFilterStaff.value}`)
+  if (hourFilterMonth.value) params.push(`month=${hourFilterMonth.value}`)
+  if (params.length) url += '?' + params.join('&')
+  hourList.value = await request.get(url)
+  hourPage.value = 1
 }
 
 const filteredSalary = computed(() => {
@@ -329,7 +345,18 @@ async function downloadExcel(url, filename) {
   ElMessage.success('导出成功')
 }
 async function exportStaff() { await downloadExcel('/labour/export/staff', `人员档案_${new Date().toISOString().slice(0,10)}.xlsx`) }
-async function exportHours() { await downloadExcel('/labour/export/work-hours', `工时记录_${new Date().toISOString().slice(0,10)}.xlsx`) }
+async function exportHours(cmd) {
+  const params = []
+  if (cmd === 'month' && hourFilterMonth.value) params.push(`month=${hourFilterMonth.value}`)
+  if (cmd === 'staff' && hourFilterStaff.value) params.push(`staff_id=${hourFilterStaff.value}`)
+  // 'all' or filtered mode without a selected filter → export all
+  let suffix = ''
+  if (cmd === 'month' && hourFilterMonth.value) suffix = `工时记录_${hourFilterMonth.value}_`
+  else if (cmd === 'staff' && hourFilterStaff.value) suffix = `工时记录_${staffMap.value[hourFilterStaff.value] || '人员'}_`
+  else suffix = `工时记录_全部_`
+  const qs = params.length ? '?' + params.join('&') : ''
+  await downloadExcel('/labour/export/work-hours' + qs, `${suffix}${new Date().toISOString().slice(0,10)}.xlsx`)
+}
 async function exportSalary() { await downloadExcel('/labour/export/salary', `薪酬管理_${new Date().toISOString().slice(0,10)}.xlsx`) }
 
 onMounted(fetch)

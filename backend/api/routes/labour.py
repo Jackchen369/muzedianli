@@ -252,6 +252,7 @@ async def create_work_hour(
 async def list_work_hours(
     staff_id: Optional[int] = None,
     project_id: Optional[int] = None,
+    month: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -269,6 +270,16 @@ async def list_work_hours(
         query = query.where(WorkHour.staff_id == staff_id)
     if project_id:
         query = query.where(WorkHour.project_id == project_id)
+    if month:
+        # month format: YYYY-MM
+        from datetime import date
+        y, m = int(month[:4]), int(month[5:7])
+        start = date(y, m, 1)
+        if m == 12:
+            end = date(y + 1, 1, 1)
+        else:
+            end = date(y, m + 1, 1)
+        query = query.where(WorkHour.work_date >= start, WorkHour.work_date < end)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -532,9 +543,30 @@ async def export_staff(db: AsyncSession = Depends(get_db), user: User = Depends(
 
 
 @router.get("/export/work-hours")
-async def export_work_hours(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    """导出工时记录 Excel"""
-    result = await db.execute(select(WorkHour).order_by(WorkHour.work_date.desc(), WorkHour.id))
+async def export_work_hours(
+    month: Optional[str] = None,
+    staff_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """导出工时记录 Excel（可按月份/人员筛选）"""
+    query = select(WorkHour).order_by(WorkHour.work_date.desc(), WorkHour.id)
+    if _is_admin(user):
+        pass
+    elif user.role == "attendance":
+        query = query.where(WorkHour.created_by == user.id)
+    else:
+        subq = select(Staff.id).where(Staff.user_id == user.id).scalar_subquery()
+        query = query.where(WorkHour.staff_id.in_(subq))
+    if staff_id:
+        query = query.where(WorkHour.staff_id == staff_id)
+    if month:
+        from datetime import date
+        y, m = int(month[:4]), int(month[5:7])
+        start = date(y, m, 1)
+        end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
+        query = query.where(WorkHour.work_date >= start, WorkHour.work_date < end)
+    result = await db.execute(query)
     wh_list = result.scalars().all()
     sids = set(w.staff_id for w in wh_list); pids = set(w.project_id for w in wh_list)
     sm = {}; pm = {}
