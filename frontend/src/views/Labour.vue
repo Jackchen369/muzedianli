@@ -340,7 +340,18 @@ async function batchApproveHours() {
 
 // Salary CRUD
 function openSalary() { salaryEditId.value = null; Object.assign(salaryForm, { staff_id:null, project_id:null, salary_month:'', base_amount:0, hourly_wage:0, insurance_fund:0, project_bonus:0, is_paid:false, paid_at:'', remark:'' }); showSalary.value = true }
-function editSalary(row) { salaryEditId.value = row.id; Object.assign(salaryForm, row); showSalary.value = true }
+function editSalary(row) {
+  salaryEditId.value = row.id
+  Object.assign(salaryForm, {
+    staff_id: row.staff_id, project_id: row.project_id, salary_month: row.salary_month,
+    base_amount: parseFloat(row.base_amount) || 0,
+    hourly_wage: parseFloat(row.hourly_wage) || 0,
+    insurance_fund: parseFloat(row.insurance_fund) || 0,
+    project_bonus: parseFloat(row.project_bonus) || 0,
+    is_paid: !!row.is_paid, paid_at: row.paid_at || '', remark: row.remark || '',
+  })
+  showSalary.value = true
+}
 async function fetchHourlyWage() {
   try {
     const res = await request.get('/labour/hourly-wage', { params: { staff_id: salaryForm.staff_id, month: salaryForm.salary_month } })
