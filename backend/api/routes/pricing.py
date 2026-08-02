@@ -1,6 +1,6 @@
 """Engineering Pricing (工程计价) CRUD routes."""
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
@@ -133,7 +133,7 @@ async def approve_pricing(
 
 @router.put("/batch-approve")
 async def batch_approve_pricing(
-    ids: list[int],
+    ids: List[int] = Body(...),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
