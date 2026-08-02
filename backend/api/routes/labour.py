@@ -576,10 +576,11 @@ async def export_staff(db: AsyncSession = Depends(get_db), user: User = Depends(
 async def export_work_hours(
     month: Optional[str] = None,
     staff_id: Optional[int] = None,
+    approved: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """导出工时记录 Excel（可按月份/人员筛选）"""
+    """导出工时记录 Excel（可按月份/人员/审核状态筛选）"""
     query = select(WorkHour).order_by(WorkHour.work_date.desc(), WorkHour.id)
     if _is_admin(user):
         pass
@@ -596,6 +597,11 @@ async def export_work_hours(
         start = date(y, m, 1)
         end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
         query = query.where(WorkHour.work_date >= start, WorkHour.work_date < end)
+    if approved:
+        if approved == "approved":
+            query = query.where(WorkHour.is_approved == True)
+        elif approved == "pending":
+            query = query.where(WorkHour.is_approved == False)
     result = await db.execute(query)
     wh_list = result.scalars().all()
     sids = set(w.staff_id for w in wh_list); pids = set(w.project_id for w in wh_list)

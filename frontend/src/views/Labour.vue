@@ -51,6 +51,8 @@
                 <el-dropdown-item command="all">全部导出</el-dropdown-item>
                 <el-dropdown-item command="month">按月份导出</el-dropdown-item>
                 <el-dropdown-item command="staff">按姓名导出</el-dropdown-item>
+                <el-dropdown-item command="approved">已审核导出</el-dropdown-item>
+                <el-dropdown-item command="pending">未审核导出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -367,10 +369,13 @@ async function exportHours(cmd) {
   const params = []
   if (cmd === 'month' && hourFilterMonth.value) params.push(`month=${hourFilterMonth.value}`)
   if (cmd === 'staff' && hourFilterStaff.value) params.push(`staff_id=${hourFilterStaff.value}`)
-  // 'all' or filtered mode without a selected filter → export all
+  if (cmd === 'approved') params.push('approved=approved')
+  if (cmd === 'pending') params.push('approved=pending')
   let suffix = ''
   if (cmd === 'month' && hourFilterMonth.value) suffix = `工时记录_${hourFilterMonth.value}_`
   else if (cmd === 'staff' && hourFilterStaff.value) suffix = `工时记录_${staffMap.value[hourFilterStaff.value] || '人员'}_`
+  else if (cmd === 'approved') suffix = `工时记录_已审核_`
+  else if (cmd === 'pending') suffix = `工时记录_未审核_`
   else suffix = `工时记录_全部_`
   const qs = params.length ? '?' + params.join('&') : ''
   await downloadExcel('/labour/export/work-hours' + qs, `${suffix}${new Date().toISOString().slice(0,10)}.xlsx`)
