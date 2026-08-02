@@ -38,6 +38,7 @@
             <el-option v-for="s in staffList" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
           <el-date-picker v-model="hourFilterMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width:130px" clearable @change="fetchHours" />
+          <el-button v-if="isAdmin" type="success" :disabled="!hourSelection.length" @click="batchApproveHours">批量审核({{ hourSelection.length }})</el-button>
           <el-button v-if="isAdmin || isAttendance" type="primary" @click="openHour">添加工时</el-button>
           <el-dropdown trigger="click" @command="exportHours">
             <el-button>导出Excel<el-icon style="margin-left:4px"><ArrowDown /></el-icon></el-button>
@@ -50,7 +51,8 @@
             </template>
           </el-dropdown>
         </div>
-        <el-table :data="paginatedHours" stripe border size="small">
+        <el-table :data="paginatedHours" stripe border size="small" @selection-change="sel => hourSelection = sel">
+          <el-table-column type="selection" width="45" align="center" :selectable="row => !row.is_approved" />
           <el-table-column label="人员" min-width="70"><template #default="{row}">{{ staffMap[row.staff_id] }}</template></el-table-column>
           <el-table-column prop="work_date" label="日期" min-width="90" />
           <el-table-column prop="position_title" label="临时职务" min-width="80" />
@@ -202,6 +204,7 @@ const projMap = ref({})
 const staffSearch = ref('')
 const hourFilterStaff = ref('')
 const hourFilterMonth = ref('')
+const hourSelection = ref([])
 const salaryFilterStaff = ref('')
 
 // Pagination
@@ -315,6 +318,15 @@ async function delHour(id) { await request.delete(`/labour/work-hours/${id}`); E
 async function toggleApprove(row) {
   await request.put(`/labour/work-hours/${row.id}/approve`)
   ElMessage.success(row.is_approved ? '已取消审核' : '已审核通过')
+  fetch()
+}
+
+async function batchApproveHours() {
+  if (!hourSelection.value.length) return
+  const ids = hourSelection.value.map(r => r.id)
+  const res = await request.put('/labour/work-hours/batch-approve', ids)
+  ElMessage.success(res.detail || '批量审核完成')
+  hourSelection.value = []
   fetch()
 }
 
