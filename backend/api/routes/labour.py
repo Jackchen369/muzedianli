@@ -437,12 +437,13 @@ async def calc_hourly_wage(
     else:
         end_date = date(y, m + 1, 1)
 
-    # 查询当月出勤记录
+    # 查询当月出勤记录（仅审核通过的）
     result = await db.execute(
         select(WorkHour).where(
             WorkHour.staff_id == staff_id,
             WorkHour.work_date >= start_date,
             WorkHour.work_date < end_date,
+            WorkHour.is_approved == True,
         )
     )
     work_hours = result.scalars().all()
