@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from core.security import get_current_user, require_project, get_current_admin
+from core.security import get_current_user
 from models import EngineeringPricing, Project, AuditLog, User
 from schemas import EngineeringPricingCreate, EngineeringPricingResponse
 
@@ -69,6 +69,32 @@ async def list_pricing(
     return {"items": result.scalars().all(), "total": total, "page": page, "page_size": page_size}
 
 
+# ─── 批量审核（必须在 /{item_id} 之前定义） ───────────────────
+
+@router.put("/batch-approve")
+async def batch_approve_pricing(
+    ids: List[int] = Body(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """批量审核工程计价记录 — 仅管理员，只审核未审核的"""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="权限不足")
+    if not ids:
+        raise HTTPException(status_code=400, detail="未选择记录")
+    result = await db.execute(
+        select(EngineeringPricing).where(
+            EngineeringPricing.id.in_(ids),
+            EngineeringPricing.is_approved == False,
+        )
+    )
+    items = result.scalars().all()
+    for item in items:
+        item.is_approved = True
+    await db.flush()
+    return {"detail": f"已批量审核 {len(items)} 条记录"}
+
+
 @router.put("/{item_id}", response_model=EngineeringPricingResponse)
 async def update_pricing(
     item_id: int,
@@ -129,30 +155,6 @@ async def approve_pricing(
     await db.flush()
     await db.refresh(item)
     return item
-
-
-@router.put("/batch-approve")
-async def batch_approve_pricing(
-    ids: List[int] = Body(...),
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """批量审核工程计价记录 — 仅管理员，只审核未审核的"""
-    if not _is_admin(user):
-        raise HTTPException(status_code=403, detail="权限不足")
-    if not ids:
-        raise HTTPException(status_code=400, detail="未选择记录")
-    result = await db.execute(
-        select(EngineeringPricing).where(
-            EngineeringPricing.id.in_(ids),
-            EngineeringPricing.is_approved == False,
-        )
-    )
-    items = result.scalars().all()
-    for item in items:
-        item.is_approved = True
-    await db.flush()
-    return {"detail": f"已批量审核 {len(items)} 条记录"}
 
 
 @router.get("/total")
