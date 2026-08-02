@@ -253,6 +253,7 @@ async def list_work_hours(
     staff_id: Optional[int] = None,
     project_id: Optional[int] = None,
     month: Optional[str] = None,
+    approved: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -280,6 +281,11 @@ async def list_work_hours(
         else:
             end = date(y, m + 1, 1)
         query = query.where(WorkHour.work_date >= start, WorkHour.work_date < end)
+    if approved:
+        if approved == "approved":
+            query = query.where(WorkHour.is_approved == True)
+        elif approved == "pending":
+            query = query.where(WorkHour.is_approved == False)
     result = await db.execute(query)
     return result.scalars().all()
 

@@ -38,6 +38,10 @@
             <el-option v-for="s in staffList" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
           <el-date-picker v-model="hourFilterMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width:130px" clearable @change="fetchHours" />
+          <el-select v-model="hourFilterApproved" clearable placeholder="审核状态" style="width:110px" @change="fetchHours">
+            <el-option label="已审核" value="approved" />
+            <el-option label="未审核" value="pending" />
+          </el-select>
           <el-button v-if="isAdmin" type="success" :disabled="!hourSelection.length" @click="batchApproveHours">批量审核({{ hourSelection.length }})</el-button>
           <el-button v-if="isAdmin || isAttendance" type="primary" @click="openHour">添加工时</el-button>
           <el-dropdown trigger="click" @command="exportHours">
@@ -204,6 +208,7 @@ const projMap = ref({})
 const staffSearch = ref('')
 const hourFilterStaff = ref('')
 const hourFilterMonth = ref('')
+const hourFilterApproved = ref('')
 const hourSelection = ref([])
 const salaryFilterStaff = ref('')
 
@@ -284,6 +289,7 @@ async function fetchHours() {
   const params = []
   if (hourFilterStaff.value) params.push(`staff_id=${hourFilterStaff.value}`)
   if (hourFilterMonth.value) params.push(`month=${hourFilterMonth.value}`)
+  if (hourFilterApproved.value) params.push(`approved=${hourFilterApproved.value}`)
   if (params.length) url += '?' + params.join('&')
   hourList.value = await request.get(url)
   hourPage.value = 1
