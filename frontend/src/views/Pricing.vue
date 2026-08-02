@@ -14,9 +14,13 @@
     <el-tabs v-model="tab" @tab-change="fetch">
       <el-tab-pane label="主体业务" name="主体业务">
         <el-card style="margin-bottom:12px">
-          <div style="font-size:14px">主体业务汇总: <span style="font-size:20px;font-weight:bold;color:#E6A23C">¥{{ ((totalMain||0)/10000).toFixed(1) }}万</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:14px">主体业务汇总: <span style="font-size:20px;font-weight:bold;color:#E6A23C">¥{{ ((totalMain||0)/10000).toFixed(1) }}万</span></div>
+            <el-button v-if="isAdmin" type="success" size="small" :disabled="!mainSelection.length" @click="batchApprove(mainSelection)">批量审核({{ mainSelection.length }})</el-button>
+          </div>
         </el-card>
-        <el-table :data="mainList" stripe border style="width:100%">
+        <el-table :data="mainList" stripe border style="width:100%" @selection-change="sel => mainSelection = sel">
+          <el-table-column type="selection" width="45" align="center" :selectable="row => !row.is_approved" />
           <el-table-column label="项目" min-width="150" align="center"><template #default="{row}">{{ projMap[row.project_id] }}</template></el-table-column>
           <el-table-column prop="item_name" label="工程名称" min-width="200" align="center" />
           <el-table-column label="金额" min-width="120" align="center"><template #default="{row}">¥{{ (row.amount||0).toLocaleString() }}</template></el-table-column>
@@ -36,9 +40,13 @@
 
       <el-tab-pane label="带电作业" name="带电作业">
         <el-card style="margin-bottom:12px">
-          <div style="font-size:14px">带电作业汇总: <span style="font-size:20px;font-weight:bold;color:#E6A23C">¥{{ ((totalLive||0)/10000).toFixed(1) }}万</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:14px">带电作业汇总: <span style="font-size:20px;font-weight:bold;color:#E6A23C">¥{{ ((totalLive||0)/10000).toFixed(1) }}万</span></div>
+            <el-button v-if="isAdmin" type="success" size="small" :disabled="!liveSelection.length" @click="batchApprove(liveSelection)">批量审核({{ liveSelection.length }})</el-button>
+          </div>
         </el-card>
-        <el-table :data="liveList" stripe border style="width:100%">
+        <el-table :data="liveList" stripe border style="width:100%" @selection-change="sel => liveSelection = sel">
+          <el-table-column type="selection" width="45" align="center" :selectable="row => !row.is_approved" />
           <el-table-column label="项目" min-width="150" align="center"><template #default="{row}">{{ projMap[row.project_id] }}</template></el-table-column>
           <el-table-column prop="item_name" label="工程名称" min-width="200" align="center" />
           <el-table-column label="金额" min-width="120" align="center"><template #default="{row}">¥{{ (row.amount||0).toLocaleString() }}</template></el-table-column>
@@ -97,6 +105,8 @@ const mainTotal = ref(0)
 const livePage = ref(1)
 const liveTotal = ref(0)
 const pageSize = ref(10)
+const mainSelection = ref([])
+const liveSelection = ref([])
 
 const currentUser = computed(() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })
 const role = computed(() => currentUser.value?.role || '')
@@ -144,6 +154,16 @@ function openEdit(row) {
 async function toggleApprove(row) {
   await request.put(`/pricing/${row.id}/approve`)
   ElMessage.success(row.is_approved ? '已取消审核' : '审核通过')
+  fetch()
+}
+
+async function batchApprove(rows) {
+  if (!rows || !rows.length) return
+  const ids = rows.map(r => r.id)
+  const res = await request.put('/pricing/batch-approve', ids)
+  ElMessage.success(res.detail || '批量审核完成')
+  mainSelection.value = []
+  liveSelection.value = []
   fetch()
 }
 

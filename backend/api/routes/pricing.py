@@ -1,5 +1,5 @@
 """Engineering Pricing (工程计价) CRUD routes."""
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -129,6 +129,30 @@ async def approve_pricing(
     await db.flush()
     await db.refresh(item)
     return item
+
+
+@router.put("/batch-approve")
+async def batch_approve_pricing(
+    ids: list[int],
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """批量审核工程计价记录 — 仅管理员，只审核未审核的"""
+    if not _is_admin(user):
+        raise HTTPException(status_code=403, detail="权限不足")
+    if not ids:
+        raise HTTPException(status_code=400, detail="未选择记录")
+    result = await db.execute(
+        select(EngineeringPricing).where(
+            EngineeringPricing.id.in_(ids),
+            EngineeringPricing.is_approved == False,
+        )
+    )
+    items = result.scalars().all()
+    for item in items:
+        item.is_approved = True
+    await db.flush()
+    return {"detail": f"已批量审核 {len(items)} 条记录"}
 
 
 @router.get("/total")
