@@ -350,6 +350,7 @@ async function fetchHourlyWage() {
 }
 async function saveSalary() {
   const payload = { ...salaryForm, net_amount: (salaryForm.base_amount||0) + (salaryForm.hourly_wage||0) - (salaryForm.insurance_fund||0) + (salaryForm.project_bonus||0) }
+  if (!payload.paid_at) payload.paid_at = null
   if (salaryEditId.value) await request.put(`/labour/salary/${salaryEditId.value}`, payload)
   else await request.post('/labour/salary', payload)
   ElMessage.success('保存成功'); showSalary.value = false; fetch()
